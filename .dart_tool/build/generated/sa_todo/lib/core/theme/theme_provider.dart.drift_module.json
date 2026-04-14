@@ -1,9 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:flutter/cupertino.dart",
-    "package:flutter_riverpod/flutter_riverpod.dart",
-    "package:shared_preferences/shared_preferences.dart",
-    "package:sa_todo/core/constants/app_constants.dart"
-  ]
-}

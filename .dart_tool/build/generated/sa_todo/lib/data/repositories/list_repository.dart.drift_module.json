@@ -1,9 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:flutter_riverpod/flutter_riverpod.dart",
-    "package:uuid/uuid.dart",
-    "package:sa_todo/data/api/api_client.dart",
-    "package:sa_todo/data/models/list_model.dart"
-  ]
-}

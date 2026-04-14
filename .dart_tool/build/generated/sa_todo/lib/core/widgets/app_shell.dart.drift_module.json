@@ -1,8 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:flutter/cupertino.dart",
-    "package:go_router/go_router.dart",
-    "package:sa_todo/core/widgets/glass_bottom_bar.dart"
-  ]
-}

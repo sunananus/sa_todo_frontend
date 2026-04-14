@@ -1,1 +1,42 @@
-docs
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+
+# Testing / coverage
+coverage/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs / temp
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Local env / machine-only config
+.env
+.env.*
+*.local
+!.env.example
+!.env.sample
+
+# Flutter version manager
+.fvm/flutter_sdk
+
+# Existing project-specific rule
+docs/
