@@ -1,0 +1,14 @@
+# Target labels
+ sqlite3-populate
+# Source files and their labels
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/sqlite3-populate
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/312021cb8737273c5be23f2d1e39176a/sqlite3-populate.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/0441bc8d2044a6d9c88ea20d02ab0a6c/sqlite3-populate-complete.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/ec9c447aae08e7cb80a3dafe8f73a574/sqlite3-populate-build.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/ec9c447aae08e7cb80a3dafe8f73a574/sqlite3-populate-configure.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/ec9c447aae08e7cb80a3dafe8f73a574/sqlite3-populate-download.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/ec9c447aae08e7cb80a3dafe8f73a574/sqlite3-populate-install.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/ec9c447aae08e7cb80a3dafe8f73a574/sqlite3-populate-mkdir.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/ec9c447aae08e7cb80a3dafe8f73a574/sqlite3-populate-patch.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/ec9c447aae08e7cb80a3dafe8f73a574/sqlite3-populate-test.rule
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/ec9c447aae08e7cb80a3dafe8f73a574/sqlite3-populate-update.rule

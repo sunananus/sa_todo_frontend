@@ -1,0 +1,20 @@
+# CMake generation dependency list for this directory.
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/CMakeGenericSystem.cmake
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/CMakeInitializeConfigs.cmake
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/CMakeSystemSpecificInformation.cmake
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/CMakeSystemSpecificInitialize.cmake
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject.cmake
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject/PatchInfo.txt.in
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject/RepositoryInfo.txt.in
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject/UpdateInfo.txt.in
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject/cfgcmd.txt.in
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject/download.cmake.in
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject/extractfile.cmake.in
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject/mkdirs.cmake.in
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/ExternalProject/shared_internal_commands.cmake
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/Platform/Windows-Initialize.cmake
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/Platform/Windows.cmake
+D:/Application/Microsoft/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-4.1/Modules/Platform/WindowsPaths.cmake
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeFiles/4.1.1-msvc1/CMakeSystem.cmake
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/CMakeLists.txt
+D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/sqlite3-populate-prefix/tmp/sqlite3-populate-mkdirs.cmake

@@ -1,0 +1,66 @@
+{
+  "elements": {
+    "AppDatabase": {
+      "id": {
+        "library_uri": "package:sa_todo/data/local/database.dart",
+        "name": "AppDatabase"
+      },
+      "declaration": {
+        "source_uri": "package:sa_todo/data/local/database.dart",
+        "offset": 481,
+        "name": "AppDatabase"
+      },
+      "references": [
+        {
+          "library_uri": "package:sa_todo/data/local/tables.dart",
+          "name": "tasks"
+        },
+        {
+          "library_uri": "package:sa_todo/data/local/tables.dart",
+          "name": "lists"
+        },
+        {
+          "library_uri": "package:sa_todo/data/local/tables.dart",
+          "name": "tags"
+        },
+        {
+          "library_uri": "package:sa_todo/data/local/tables.dart",
+          "name": "task_tags"
+        }
+      ],
+      "type": "database",
+      "tables": [
+        {
+          "library_uri": "package:sa_todo/data/local/tables.dart",
+          "name": "tasks"
+        },
+        {
+          "library_uri": "package:sa_todo/data/local/tables.dart",
+          "name": "lists"
+        },
+        {
+          "library_uri": "package:sa_todo/data/local/tables.dart",
+          "name": "tags"
+        },
+        {
+          "library_uri": "package:sa_todo/data/local/tables.dart",
+          "name": "task_tags"
+        }
+      ],
+      "views": [],
+      "includes": [],
+      "queries": [],
+      "schema_version": 1,
+      "daos": [],
+      "has_constructor_arg": false
+    }
+  },
+  "imports": [
+    "package:drift/drift.dart",
+    "package:drift/native.dart",
+    "package:path_provider/path_provider.dart",
+    "package:path/path.dart",
+    "package:flutter_riverpod/flutter_riverpod.dart",
+    "package:sa_todo/data/local/tables.dart"
+  ]
+}

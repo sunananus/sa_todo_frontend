@@ -1,0 +1,13 @@
+{
+	"InstallScripts" : 
+	[
+		"D:/sa_todo_frontend/build/windows/x64/cmake_install.cmake",
+		"D:/sa_todo_frontend/build/windows/x64/flutter/cmake_install.cmake",
+		"D:/sa_todo_frontend/build/windows/x64/runner/cmake_install.cmake",
+		"D:/sa_todo_frontend/build/windows/x64/plugins/connectivity_plus/cmake_install.cmake",
+		"D:/sa_todo_frontend/build/windows/x64/plugins/sqlite3_flutter_libs/cmake_install.cmake",
+		"D:/sa_todo_frontend/build/windows/x64/plugins/jni/cmake_install.cmake",
+		"D:/sa_todo_frontend/build/windows/x64/plugins/jni/shared/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

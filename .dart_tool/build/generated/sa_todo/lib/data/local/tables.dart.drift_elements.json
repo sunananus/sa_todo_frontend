@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false}],"elements":[{"kind":"table","name":"tasks","dart_name":"Tasks"},{"kind":"table","name":"lists","dart_name":"Lists"},{"kind":"table","name":"tags","dart_name":"Tags"},{"kind":"table","name":"task_tags","dart_name":"TaskTags"}]}

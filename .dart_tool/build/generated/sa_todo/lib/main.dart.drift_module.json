@@ -1,0 +1,8 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter/cupertino.dart",
+    "package:flutter_riverpod/flutter_riverpod.dart",
+    "package:sa_todo/app.dart"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"D:/sa_todo_frontend/build/windows/x64/_deps/sqlite3-subbuild/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

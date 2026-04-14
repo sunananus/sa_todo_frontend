@@ -1,0 +1,10 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter/cupertino.dart",
+    "package:flutter_riverpod/flutter_riverpod.dart",
+    "package:sa_todo/core/theme/app_theme.dart",
+    "package:sa_todo/core/theme/theme_provider.dart",
+    "package:sa_todo/core/router/app_router.dart"
+  ]
+}

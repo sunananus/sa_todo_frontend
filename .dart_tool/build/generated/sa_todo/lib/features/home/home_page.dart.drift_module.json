@@ -1,0 +1,17 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter/cupertino.dart",
+    "package:flutter_riverpod/flutter_riverpod.dart",
+    "package:go_router/go_router.dart",
+    "package:sa_todo/core/theme/app_colors.dart",
+    "package:sa_todo/core/theme/app_text_styles.dart",
+    "package:sa_todo/core/constants/app_constants.dart",
+    "package:sa_todo/data/repositories/task_repository.dart",
+    "package:sa_todo/data/repositories/list_repository.dart",
+    "package:sa_todo/data/repositories/sync_repository.dart",
+    "package:sa_todo/features/home/home_provider.dart",
+    "package:sa_todo/features/home/widgets/task_item_card.dart",
+    "package:sa_todo/features/home/widgets/quick_add_bar.dart"
+  ]
+}
