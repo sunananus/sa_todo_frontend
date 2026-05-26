@@ -4,7 +4,16 @@
       "Read(//d/sa_todo_backend/internal/handler/**)",
       "Read(//d/sa_todo_backend/**)",
       "Bash(mkdir -p \"d:\\\\sa_todo_frontend\\\\lib\\\\features\\\\widget\")",
-      "Bash(flutter pub *)"
+      "Bash(flutter pub *)",
+      "Bash(curl -L -o Inter-Regular.ttf \"https://github.com/rsms/inter/raw/v4.0/docs/font-files/Inter-Regular.woff2\")",
+      "Bash(rm -f Inter-Regular.ttf)",
+      "Bash(curl -L -o Inter-Regular.ttf \"https://github.com/rsms/inter/releases/download/v4.0/Inter-4.0.ttf\")",
+      "Bash(curl -L -o Inter.zip \"https://fonts.google.com/download?family=Inter\")",
+      "Bash(rm -f Inter.zip)",
+      "Bash(curl -L -o Inter-Regular.ttf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-Regular.otf\")",
+      "Bash(curl -L -o Inter-Medium.otf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-Medium.otf\")",
+      "Bash(curl -L -o Inter-SemiBold.otf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-SemiBold.otf\")",
+      "Bash(curl -L -o Inter-Bold.otf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-Bold.otf\")"
     ],
     "additionalDirectories": [
       "d:\\sa_todo_frontend\\lib\\features"
