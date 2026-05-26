@@ -18,10 +18,8 @@ class ListsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = CupertinoTheme.brightnessOf(context);
-    ref.watch(refreshTriggerProvider);
-    final listRepo = ref.read(listRepositoryProvider);
-    final taskRepo = ref.read(taskRepositoryProvider);
-    final lists = listRepo.lists;
+    final lists = ref.watch(listRepositoryProvider);
+    final taskRepo = ref.read(taskRepositoryProvider.notifier);
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.background(brightness),
@@ -153,9 +151,7 @@ class ListsPage extends ConsumerWidget {
             onPressed: () async {
               final name = controller.text.trim();
               if (name.isNotEmpty) {
-                final listRepo = ref.read(listRepositoryProvider);
-                await listRepo.createList(name: name);
-                ref.read(refreshTriggerProvider.notifier).state++;
+                await ref.read(listRepositoryProvider.notifier).createList(name: name);
               }
               if (!context.mounted) return;
               Navigator.pop(context);
@@ -181,9 +177,7 @@ class ListsPage extends ConsumerWidget {
           CupertinoDialogAction(
             isDestructiveAction: true,
             onPressed: () async {
-              final listRepo = ref.read(listRepositoryProvider);
-              await listRepo.deleteList(listId);
-              ref.read(refreshTriggerProvider.notifier).state++;
+              await ref.read(listRepositoryProvider.notifier).deleteList(listId);
               if (!context.mounted) return;
               Navigator.pop(context);
             },

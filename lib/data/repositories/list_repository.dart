@@ -6,21 +6,23 @@ import 'package:uuid/uuid.dart';
 import '../api/api_client.dart';
 import '../models/list_model.dart';
 
-final listRepositoryProvider = Provider<ListRepository>((ref) {
-  return ListRepository(ref.read(apiClientProvider));
-});
+final listRepositoryProvider =
+    NotifierProvider<ListRepository, List<ListModel>>(ListRepository.new);
 
-class ListRepository {
-  final ApiClient _api;
+class ListRepository extends Notifier<List<ListModel>> {
   final _uuid = const Uuid();
   final List<ListModel> _lists = [];
 
-  ListRepository(this._api);
+  ApiClient get _api => ref.read(apiClientProvider);
 
-  List<ListModel> get lists => List.unmodifiable(
+  @override
+  List<ListModel> build() => [];
+
+  List<ListModel> get _visibleLists =>
       _lists.where((l) => !l.isDeleted).toList()
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
-    );
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+  void _notify() => state = _visibleLists;
 
   ListModel? getListById(String id) {
     try {
@@ -55,6 +57,7 @@ class ListRepository {
         syncStatus: 1,
       ));
     }
+    _notify();
   }
 
   Future<ListModel> createList({
@@ -74,12 +77,14 @@ class ListRepository {
     );
 
     _lists.add(list);
+    _notify();
 
     try {
       final response = await _api.createList(list.toJson());
       if (response.isSuccess) {
         final index = _lists.indexWhere((l) => l.id == list.id);
         if (index >= 0) _lists[index] = list.copyWith(syncStatus: 1);
+        _notify();
       }
     } catch (_) {}
 
@@ -93,11 +98,13 @@ class ListRepository {
     );
     final index = _lists.indexWhere((l) => l.id == list.id);
     if (index >= 0) _lists[index] = updated;
+    _notify();
 
     try {
       await _api.updateList(list.id, updated.toJson());
       final idx = _lists.indexWhere((l) => l.id == list.id);
       if (idx >= 0) _lists[idx] = updated.copyWith(syncStatus: 1);
+      _notify();
     } catch (_) {}
 
     return updated;
@@ -114,6 +121,7 @@ class ListRepository {
         syncStatus: 0,
       );
     }
+    _notify();
     try {
       await _api.deleteList(listId);
     } catch (_) {}
@@ -131,5 +139,6 @@ class ListRepository {
         _lists.add(serverList);
       }
     }
+    _notify();
   }
 }

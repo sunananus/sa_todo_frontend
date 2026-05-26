@@ -17,7 +17,7 @@ class WidgetService {
 
   /// 刷新小组件数据
   Future<void> refreshWidget() async {
-    final taskRepo = _ref.read(taskRepositoryProvider);
-    await WidgetDataService.updateWidget(taskRepo.tasks);
+    final tasks = _ref.read(taskRepositoryProvider);
+    await WidgetDataService.updateWidget(tasks);
   }
 }

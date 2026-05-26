@@ -3,9 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/task_model.dart';
-import '../../data/models/list_model.dart';
 import '../../data/repositories/task_repository.dart';
-import '../../data/repositories/list_repository.dart';
 import '../../data/repositories/sync_repository.dart';
 
 /// 当前选中的清单 ID
@@ -19,23 +17,14 @@ final appInitProvider = FutureProvider<void>((ref) async {
 
 /// 任务列表 Provider（带过滤）
 final filteredTasksProvider = Provider<List<TaskModel>>((ref) {
-  final taskRepo = ref.read(taskRepositoryProvider);
+  final tasks = ref.watch(taskRepositoryProvider);
   final selectedListId = ref.watch(selectedListIdProvider);
 
   if (selectedListId == null) {
-    return taskRepo.tasks;
+    return tasks;
   }
-  return taskRepo.getTasksByListId(selectedListId);
+  return tasks.where((t) => t.listId == selectedListId).toList();
 });
-
-/// 清单列表 Provider
-final listsProvider = Provider<List<ListModel>>((ref) {
-  final listRepo = ref.read(listRepositoryProvider);
-  return listRepo.lists;
-});
-
-/// 刷新触发器
-final refreshTriggerProvider = StateProvider<int>((ref) => 0);
 
 /// 同步状态
 enum SyncState { idle, syncing, success, error }

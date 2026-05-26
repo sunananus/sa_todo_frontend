@@ -2,6 +2,7 @@
 // 主页 — 任务列表
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -49,7 +50,6 @@ class _HomePageState extends ConsumerState<HomePage>
       final result = await syncRepo.syncFull();
       ref.read(syncStateProvider.notifier).state =
           result.success ? SyncState.success : SyncState.error;
-      ref.read(refreshTriggerProvider.notifier).state++;
     } catch (_) {
       ref.read(syncStateProvider.notifier).state = SyncState.error;
     }
@@ -61,22 +61,16 @@ class _HomePageState extends ConsumerState<HomePage>
   @override
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.brightnessOf(context);
-    // 监听刷新触发器以重建 UI
-    ref.watch(refreshTriggerProvider);
-    // 任务变更时刷新小组件
-    ref.listen(refreshTriggerProvider, (prev, next) {
+    // 监听任务变更以重建 UI 和刷新小组件
+    final tasks = ref.watch(filteredTasksProvider);
+    ref.listen(taskRepositoryProvider, (prev, next) {
       ref.read(widgetServiceProvider).refreshWidget();
     });
-    final taskRepo = ref.read(taskRepositoryProvider);
-    final listRepo = ref.read(listRepositoryProvider);
+    final lists = ref.watch(listRepositoryProvider);
+    final listRepo = ref.read(listRepositoryProvider.notifier);
     final selectedListId = ref.watch(selectedListIdProvider);
     final syncState = ref.watch(syncStateProvider);
 
-    final tasks = selectedListId == null
-        ? taskRepo.tasks
-        : taskRepo.getTasksByListId(selectedListId);
-
-    final lists = listRepo.lists;
     final selectedList = selectedListId != null
         ? listRepo.getListById(selectedListId)
         : null;
@@ -240,11 +234,21 @@ class _HomePageState extends ConsumerState<HomePage>
                           task: task,
                           onTap: () => context.push('/task/${task.id}'),
                           onStatusChanged: (checked) async {
-                            final taskRepo = ref.read(taskRepositoryProvider);
-                            await taskRepo.toggleTaskStatus(task.id);
-                            ref.read(refreshTriggerProvider.notifier).state++;
+                            await ref.read(taskRepositoryProvider.notifier).toggleTaskStatus(task.id);
                           },
-                        );
+                        )
+                            .animate()
+                            .fadeIn(
+                              delay: Duration(milliseconds: 50 * index),
+                              duration: AppConstants.animNormal,
+                            )
+                            .slideY(
+                              begin: 0.1,
+                              end: 0,
+                              delay: Duration(milliseconds: 50 * index),
+                              duration: AppConstants.animNormal,
+                              curve: Curves.easeOut,
+                            );
                       },
                       childCount: tasks.length,
                     ),
@@ -261,12 +265,10 @@ class _HomePageState extends ConsumerState<HomePage>
             child: QuickAddBar(
               initialExpanded: GoRouterState.of(context).uri.queryParameters['action'] == 'quickadd',
               onSubmit: (title) async {
-                final taskRepo = ref.read(taskRepositoryProvider);
-                await taskRepo.createTask(
+                await ref.read(taskRepositoryProvider.notifier).createTask(
                   title: title,
                   listId: selectedListId ?? AppConstants.inboxListId,
                 );
-                ref.read(refreshTriggerProvider.notifier).state++;
               },
             ),
           ),

@@ -2,6 +2,7 @@
 // 任务详情 / 编辑页面
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -12,7 +13,6 @@ import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/priority_badge.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/list_repository.dart';
-import '../home/home_provider.dart';
 
 class TaskDetailPage extends ConsumerStatefulWidget {
   final String taskId;
@@ -34,7 +34,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
   @override
   void initState() {
     super.initState();
-    final taskRepo = ref.read(taskRepositoryProvider);
+    final taskRepo = ref.read(taskRepositoryProvider.notifier);
     final task = taskRepo.getTaskById(widget.taskId);
     _titleController = TextEditingController(text: task?.title ?? '');
     _descController = TextEditingController(text: task?.description ?? '');
@@ -51,7 +51,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
   }
 
   Future<void> _save() async {
-    final taskRepo = ref.read(taskRepositoryProvider);
+    final taskRepo = ref.read(taskRepositoryProvider.notifier);
     final task = taskRepo.getTaskById(widget.taskId);
     if (task == null) return;
 
@@ -64,24 +64,20 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       clearDueDate: _dueDate == null && task.dueDate != null,
     ));
 
-    ref.read(refreshTriggerProvider.notifier).state++;
     if (mounted) context.pop();
   }
 
   Future<void> _delete() async {
-    final taskRepo = ref.read(taskRepositoryProvider);
-    await taskRepo.deleteTask(widget.taskId);
-    ref.read(refreshTriggerProvider.notifier).state++;
+    await ref.read(taskRepositoryProvider.notifier).deleteTask(widget.taskId);
     if (mounted) context.pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.brightnessOf(context);
-    final taskRepo = ref.read(taskRepositoryProvider);
+    final taskRepo = ref.read(taskRepositoryProvider.notifier);
     final task = taskRepo.getTaskById(widget.taskId);
-    final listRepo = ref.read(listRepositoryProvider);
-    final lists = listRepo.lists;
+    final lists = ref.watch(listRepositoryProvider);
 
     if (task == null) {
       return CupertinoPageScaffold(
@@ -134,7 +130,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                   ),
 
                 ),
-              ),
+              ).animate().fadeIn(duration: AppConstants.animNormal).slideY(begin: 0.1, end: 0, duration: AppConstants.animNormal, curve: Curves.easeOut),
 
               const SizedBox(height: 12),
 
@@ -154,7 +150,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                   ),
 
                 ),
-              ),
+              ).animate().fadeIn(delay: 50.ms, duration: AppConstants.animNormal).slideY(begin: 0.1, end: 0, delay: 50.ms, duration: AppConstants.animNormal, curve: Curves.easeOut),
 
               const SizedBox(height: 16),
 
@@ -202,7 +198,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                     ),
                   ],
                 ),
-              ),
+              ).animate().fadeIn(delay: 100.ms, duration: AppConstants.animNormal).slideY(begin: 0.1, end: 0, delay: 100.ms, duration: AppConstants.animNormal, curve: Curves.easeOut),
 
               const SizedBox(height: 24),
 
@@ -230,7 +226,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                     ],
                   ],
                 ),
-              ),
+              ).animate().fadeIn(delay: 150.ms, duration: AppConstants.animNormal),
 
               const SizedBox(height: 32),
 
@@ -249,7 +245,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                     ),
                   ),
                 ),
-              ),
+              ).animate().fadeIn(delay: 150.ms, duration: AppConstants.animNormal),
             ],
           ),
         ),

@@ -2,6 +2,7 @@
 // 数据统计页面
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_colors.dart';
@@ -9,7 +10,6 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../data/repositories/task_repository.dart';
-import '../home/home_provider.dart';
 
 class StatisticsPage extends ConsumerWidget {
   const StatisticsPage({super.key});
@@ -17,8 +17,8 @@ class StatisticsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = CupertinoTheme.brightnessOf(context);
-    ref.watch(refreshTriggerProvider);
-    final taskRepo = ref.read(taskRepositoryProvider);
+    ref.watch(taskRepositoryProvider);
+    final taskRepo = ref.read(taskRepositoryProvider.notifier);
     final weeklyStats = taskRepo.getWeeklyStats();
     final totalCompleted = taskRepo.totalCompleted;
     final totalPending = taskRepo.totalPending;
@@ -51,7 +51,7 @@ class StatisticsPage extends ConsumerWidget {
                           label: '已完成',
                           value: '$totalCompleted',
                           color: AppColors.success,
-                        ),
+                        ).animate().fadeIn(duration: AppConstants.animNormal).slideY(begin: 0.15, end: 0, duration: AppConstants.animNormal, curve: Curves.easeOut),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -60,7 +60,7 @@ class StatisticsPage extends ConsumerWidget {
                           label: '待办中',
                           value: '$totalPending',
                           color: AppColors.primary(brightness),
-                        ),
+                        ).animate().fadeIn(delay: 60.ms, duration: AppConstants.animNormal).slideY(begin: 0.15, end: 0, delay: 60.ms, duration: AppConstants.animNormal, curve: Curves.easeOut),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -69,7 +69,7 @@ class StatisticsPage extends ConsumerWidget {
                           label: '总计',
                           value: '${totalCompleted + totalPending}',
                           color: AppColors.warning,
-                        ),
+                        ).animate().fadeIn(delay: 120.ms, duration: AppConstants.animNormal).slideY(begin: 0.15, end: 0, delay: 120.ms, duration: AppConstants.animNormal, curve: Curves.easeOut),
                       ),
                     ],
                   ),
@@ -166,7 +166,7 @@ class StatisticsPage extends ConsumerWidget {
                         ),
                       ],
                     ),
-                  ),
+                  ).animate().fadeIn(delay: 180.ms, duration: AppConstants.animNormal).slideY(begin: 0.1, end: 0, delay: 180.ms, duration: AppConstants.animNormal, curve: Curves.easeOut),
                 ],
               ),
             ),

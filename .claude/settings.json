@@ -13,7 +13,12 @@
       "Bash(curl -L -o Inter-Regular.ttf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-Regular.otf\")",
       "Bash(curl -L -o Inter-Medium.otf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-Medium.otf\")",
       "Bash(curl -L -o Inter-SemiBold.otf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-SemiBold.otf\")",
-      "Bash(curl -L -o Inter-Bold.otf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-Bold.otf\")"
+      "Bash(curl -L -o Inter-Bold.otf \"https://raw.githubusercontent.com/rsms/inter/v3.19/docs/font-files/Inter-Bold.otf\")",
+      "Bash(dart pub *)",
+      "Bash(findstr animate *)",
+      "Bash(dir /s /b \"d:\\\\sa_todo_frontend\\\\.dart_tool\\\\package_config.json\")",
+      "Bash(findstr flutter_animate)",
+      "Read(//c/Users/14868/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_animate-4.5.2/lib/**)"
     ],
     "additionalDirectories": [
       "d:\\sa_todo_frontend\\lib\\features"

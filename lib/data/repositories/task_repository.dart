@@ -6,31 +6,34 @@ import 'package:uuid/uuid.dart';
 import '../api/api_client.dart';
 import '../models/task_model.dart';
 
-final taskRepositoryProvider = Provider<TaskRepository>((ref) {
-  return TaskRepository(ref.read(apiClientProvider));
-});
+final taskRepositoryProvider =
+    NotifierProvider<TaskRepository, List<TaskModel>>(TaskRepository.new);
 
-class TaskRepository {
-  final ApiClient _api;
+class TaskRepository extends Notifier<List<TaskModel>> {
   final _uuid = const Uuid();
 
-  // 本地内存缓存
+  // 本地内存缓存（包含已删除的，全量）
   final List<TaskModel> _tasks = [];
 
-  TaskRepository(this._api);
+  ApiClient get _api => ref.read(apiClientProvider);
 
-  List<TaskModel> get tasks => List.unmodifiable(
+  @override
+  List<TaskModel> build() => [];
+
+  /// 排序后的可见任务列表
+  List<TaskModel> get _visibleTasks =>
       _tasks.where((t) => !t.isDeleted).toList()
         ..sort((a, b) {
-          // 未完成排前面，然后按 priority 降序，再按 createdAt 降序
           if (a.status != b.status) return a.status.compareTo(b.status);
           if (a.priority != b.priority) return b.priority.compareTo(a.priority);
           return b.createdAt.compareTo(a.createdAt);
-        }),
-    );
+        });
+
+  /// 同步 state 到 UI
+  void _notify() => state = _visibleTasks;
 
   List<TaskModel> getTasksByListId(String listId) {
-    return tasks.where((t) => t.listId == listId).toList();
+    return state.where((t) => t.listId == listId).toList();
   }
 
   List<TaskModel> get unsyncedTasks =>
@@ -51,6 +54,7 @@ class TaskRepository {
       if (response.isSuccess && response.data != null) {
         _tasks.clear();
         _tasks.addAll(response.data!.map((j) => TaskModel.fromJson(j)));
+        _notify();
       }
     } catch (_) {
       // 网络异常，使用本地缓存
@@ -79,6 +83,7 @@ class TaskRepository {
     );
 
     _tasks.add(task);
+    _notify();
 
     // 异步推送到服务器
     try {
@@ -87,6 +92,7 @@ class TaskRepository {
         final index = _tasks.indexWhere((t) => t.id == task.id);
         if (index >= 0) {
           _tasks[index] = task.copyWith(syncStatus: 1);
+          _notify();
         }
       }
     } catch (_) {
@@ -107,6 +113,7 @@ class TaskRepository {
     if (index >= 0) {
       _tasks[index] = updated;
     }
+    _notify();
 
     try {
       final response = await _api.updateTask(task.id, updated.toJson());
@@ -114,6 +121,7 @@ class TaskRepository {
         final idx = _tasks.indexWhere((t) => t.id == task.id);
         if (idx >= 0) {
           _tasks[idx] = updated.copyWith(syncStatus: 1);
+          _notify();
         }
       }
     } catch (_) {}
@@ -141,12 +149,14 @@ class TaskRepository {
     if (index >= 0) {
       _tasks[index] = updated;
     }
+    _notify();
 
     try {
       await _api.updateTask(taskId, updated.toJson());
       final idx = _tasks.indexWhere((t) => t.id == taskId);
       if (idx >= 0) {
         _tasks[idx] = updated.copyWith(syncStatus: 1);
+        _notify();
       }
     } catch (_) {}
 
@@ -164,12 +174,14 @@ class TaskRepository {
         syncStatus: 0,
       );
     }
+    _notify();
 
     try {
       await _api.deleteTask(taskId);
       final idx = _tasks.indexWhere((t) => t.id == taskId);
       if (idx >= 0) {
         _tasks[idx] = _tasks[idx].copyWith(syncStatus: 1);
+        _notify();
       }
     } catch (_) {}
   }
@@ -187,6 +199,7 @@ class TaskRepository {
         _tasks.add(serverTask);
       }
     }
+    _notify();
   }
 
   /// 获取统计数据

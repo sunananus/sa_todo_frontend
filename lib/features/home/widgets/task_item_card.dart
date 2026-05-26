@@ -29,7 +29,10 @@ class TaskItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.brightnessOf(context);
 
-    return Padding(
+    return AnimatedOpacity(
+      opacity: task.isCompleted ? 0.6 : 1.0,
+      duration: AppConstants.animNormal,
+      child: Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppConstants.spacingLg,
         vertical: AppConstants.spacingXs,
@@ -113,6 +116,7 @@ class TaskItemCard extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 
