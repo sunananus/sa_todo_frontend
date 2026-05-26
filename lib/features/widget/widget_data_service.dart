@@ -2,6 +2,7 @@
 // 小组件数据服务 — 桥接内存任务列表与原生小组件共享存储
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:home_widget/home_widget.dart';
 import '../../data/models/task_model.dart';
 
@@ -13,9 +14,11 @@ class WidgetDataService {
   static const _taskCountKey = 'task_count';
   static const _maxTasks = 5;
 
-  /// 初始化 home_widget（设置 iOS App Group）
+  /// 初始化 home_widget（仅 iOS 需要设置 App Group）
   static Future<void> init() async {
-    await HomeWidget.setAppGroupId(_appGroupId);
+    if (Platform.isIOS) {
+      await HomeWidget.setAppGroupId(_appGroupId);
+    }
   }
 
   /// 将未完成任务推送到小组件共享存储

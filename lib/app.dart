@@ -1,6 +1,7 @@
 // lib/app.dart
 // CupertinoApp 配置 — 主题 + 路由
 
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
@@ -19,12 +20,14 @@ class _AppState extends ConsumerState<App> {
   @override
   void initState() {
     super.initState();
-    // 监听小组件点击事件
-    HomeWidget.widgetClicked.listen((uri) {
-      if (uri != null && uri.host == 'quickadd') {
-        appRouter.go('/?action=quickadd');
-      }
-    });
+    // 监听小组件点击事件（仅 iOS/Android）
+    if (Platform.isIOS || Platform.isAndroid) {
+      HomeWidget.widgetClicked.listen((uri) {
+        if (uri != null && uri.host == 'quickadd') {
+          appRouter.go('/?action=quickadd');
+        }
+      });
+    }
   }
 
   @override

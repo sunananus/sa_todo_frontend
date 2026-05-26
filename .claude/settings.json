@@ -18,7 +18,12 @@
       "Bash(findstr animate *)",
       "Bash(dir /s /b \"d:\\\\sa_todo_frontend\\\\.dart_tool\\\\package_config.json\")",
       "Bash(findstr flutter_animate)",
-      "Read(//c/Users/14868/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_animate-4.5.2/lib/**)"
+      "Read(//c/Users/14868/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_animate-4.5.2/lib/**)",
+      "Bash(git push *)",
+      "Bash(git config *)",
+      "Bash(GIT_CURL_VERBOSE=1 git push)",
+      "Bash(flutter doctor *)",
+      "PowerShell(Test-Path \"C:\\\\Program Files\\\\Android\\\\Android Studio\"; Test-Path \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\")"
     ],
     "additionalDirectories": [
       "d:\\sa_todo_frontend\\lib\\features"
