@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/sa_todo_backend/internal/handler/**)",
+      "Read(//d/sa_todo_backend/**)",
+      "Bash(mkdir -p \"d:\\\\sa_todo_frontend\\\\lib\\\\features\\\\widget\")",
+      "Bash(flutter pub *)"
+    ],
+    "additionalDirectories": [
+      "d:\\sa_todo_frontend\\lib\\features"
+    ]
+  }
+}

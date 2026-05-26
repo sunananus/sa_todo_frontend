@@ -10,6 +10,7 @@ import '../../core/constants/app_constants.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/list_repository.dart';
 import '../../data/repositories/sync_repository.dart';
+import '../widget/widget_provider.dart';
 import 'home_provider.dart';
 import 'widgets/task_item_card.dart';
 import 'widgets/quick_add_bar.dart';
@@ -37,6 +38,8 @@ class _HomePageState extends ConsumerState<HomePage>
       await syncRepo.initialLoad();
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
+    // 初始加载后刷新小组件
+    ref.read(widgetServiceProvider).refreshWidget();
   }
 
   Future<void> _sync() async {
@@ -60,6 +63,10 @@ class _HomePageState extends ConsumerState<HomePage>
     final brightness = CupertinoTheme.brightnessOf(context);
     // 监听刷新触发器以重建 UI
     ref.watch(refreshTriggerProvider);
+    // 任务变更时刷新小组件
+    ref.listen(refreshTriggerProvider, (prev, next) {
+      ref.read(widgetServiceProvider).refreshWidget();
+    });
     final taskRepo = ref.read(taskRepositoryProvider);
     final listRepo = ref.read(listRepositoryProvider);
     final selectedListId = ref.watch(selectedListIdProvider);
@@ -250,8 +257,9 @@ class _HomePageState extends ConsumerState<HomePage>
           Positioned(
             left: 0,
             right: 0,
-            bottom: 50 + MediaQuery.paddingOf(context).bottom, // 避开底部导航栏
+            bottom: (MediaQuery.sizeOf(context).width >= AppConstants.kDesktopBreakpoint ? 0 : 50) + MediaQuery.paddingOf(context).bottom,
             child: QuickAddBar(
+              initialExpanded: GoRouterState.of(context).uri.queryParameters['action'] == 'quickadd',
               onSubmit: (title) async {
                 final taskRepo = ref.read(taskRepositoryProvider);
                 await taskRepo.createTask(

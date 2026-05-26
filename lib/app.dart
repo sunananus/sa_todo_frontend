@@ -3,30 +3,36 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/router/app_router.dart';
 
-class App extends ConsumerWidget {
+class App extends ConsumerStatefulWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
+  ConsumerState<App> createState() => _AppState();
+}
 
-    // 根据 themeMode 决定实际的 Brightness
-    Brightness resolveBrightness() {
-      switch (themeMode) {
-        case AppThemeMode.light:
-          return Brightness.light;
-        case AppThemeMode.dark:
-          return Brightness.dark;
-        case AppThemeMode.system:
-          return MediaQuery.platformBrightnessOf(context);
+class _AppState extends ConsumerState<App> {
+  @override
+  void initState() {
+    super.initState();
+    // 监听小组件点击事件
+    HomeWidget.widgetClicked.listen((uri) {
+      if (uri != null && uri.host == 'quickadd') {
+        appRouter.go('/?action=quickadd');
       }
-    }
+    });
+  }
 
-    final brightness = resolveBrightness();
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeProvider);
+    final brightness = themeMode == AppThemeMode.system
+        ? MediaQuery.platformBrightnessOf(context)
+        : (themeMode == AppThemeMode.dark ? Brightness.dark : Brightness.light);
     final theme =
         brightness == Brightness.dark ? AppTheme.dark : AppTheme.light;
 

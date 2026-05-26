@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 标题行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SA Todo"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_task_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 pending"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="12sp" />
+
+        <ImageButton
+            android:id="@+id/btn_quick_add"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="8dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="快速添加"
+            android:src="@android:drawable/ic_input_add"
+            android:tint="@color/widget_primary" />
+    </LinearLayout>
+
+    <!-- 分隔线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        android:background="@color/widget_separator" />
+
+    <!-- 任务列表容器 -->
+    <LinearLayout
+        android:id="@+id/task_list_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- 任务行 1 -->
+        <LinearLayout
+            android:id="@+id/task_row_0"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/priority_dot_0"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@android:color/darker_gray" />
+
+            <TextView
+                android:id="@+id/task_title_0"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_primary"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- 任务行 2 -->
+        <LinearLayout
+            android:id="@+id/task_row_1"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/priority_dot_1"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@android:color/darker_gray" />
+
+            <TextView
+                android:id="@+id/task_title_1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_primary"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- 任务行 3 -->
+        <LinearLayout
+            android:id="@+id/task_row_2"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/priority_dot_2"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@android:color/darker_gray" />
+
+            <TextView
+                android:id="@+id/task_title_2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_primary"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- 任务行 4 -->
+        <LinearLayout
+            android:id="@+id/task_row_3"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/priority_dot_3"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@android:color/darker_gray" />
+
+            <TextView
+                android:id="@+id/task_title_3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_primary"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- 任务行 5 -->
+        <LinearLayout
+            android:id="@+id/task_row_4"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/priority_dot_4"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@android:color/darker_gray" />
+
+            <TextView
+                android:id="@+id/task_title_4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/widget_text_primary"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 空状态 -->
+    <LinearLayout
+        android:id="@+id/empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_empty_check"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✓"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="28sp" />
+
+        <TextView
+            android:id="@+id/tv_empty_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="没有待办事项"
+            android:textColor="@color/widget_text_secondary"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+</LinearLayout>

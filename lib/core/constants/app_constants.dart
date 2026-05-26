@@ -17,6 +17,10 @@ class AppConstants {
   static const Duration animNormal = Duration(milliseconds: 300);
   static const Duration animSlow = Duration(milliseconds: 500);
 
+  // 响应式布局
+  static const double kDesktopBreakpoint = 768.0;
+  static const double sidebarWidth = 240.0;
+
   // 毛玻璃参数
   static const double glassBlurSigma = 12.0;
   static const double glassBlurSigmaDark = 15.0;

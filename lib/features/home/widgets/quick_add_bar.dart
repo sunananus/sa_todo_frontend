@@ -8,8 +8,13 @@ import '../../../core/widgets/glass_container.dart';
 
 class QuickAddBar extends StatefulWidget {
   final Function(String title) onSubmit;
+  final bool initialExpanded;
 
-  const QuickAddBar({super.key, required this.onSubmit});
+  const QuickAddBar({
+    super.key,
+    required this.onSubmit,
+    this.initialExpanded = false,
+  });
 
   @override
   State<QuickAddBar> createState() => _QuickAddBarState();
@@ -23,9 +28,15 @@ class _QuickAddBarState extends State<QuickAddBar> {
   @override
   void initState() {
     super.initState();
+    _isExpanded = widget.initialExpanded;
     _controller.addListener(() {
       if (mounted) setState(() {});
     });
+    if (_isExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _focusNode.requestFocus();
+      });
+    }
   }
 
   @override

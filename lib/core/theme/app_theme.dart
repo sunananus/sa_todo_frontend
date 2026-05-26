@@ -8,79 +8,101 @@ class AppTheme {
   AppTheme._();
 
   /// 亮色 Cupertino 主题
-  static CupertinoThemeData get light => const CupertinoThemeData(
+  static CupertinoThemeData get light => CupertinoThemeData(
         brightness: Brightness.light,
         primaryColor: AppColors.lightPrimary,
         primaryContrastingColor: CupertinoColors.white,
         scaffoldBackgroundColor: AppColors.lightBackground,
-        barBackgroundColor: Color(0xE6F2F2F7),
+        barBackgroundColor: AppColors.glassTint(Brightness.light),
         textTheme: CupertinoTextThemeData(
           primaryColor: AppColors.lightPrimary,
-          textStyle: TextStyle(
+          textStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 17,
             color: AppColors.lightTextPrimary,
           ),
-          navTitleTextStyle: TextStyle(
+          navTitleTextStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 17,
             fontWeight: FontWeight.w600,
             color: AppColors.lightTextPrimary,
           ),
-          navLargeTitleTextStyle: TextStyle(
+          navLargeTitleTextStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 34,
             fontWeight: FontWeight.w700,
             color: AppColors.lightTextPrimary,
           ),
-          tabLabelTextStyle: TextStyle(
+          tabLabelTextStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 10,
             fontWeight: FontWeight.w500,
+            color: AppColors.lightTextSecondary,
           ),
-          navActionTextStyle: TextStyle(
+          navActionTextStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 17,
             color: AppColors.lightPrimary,
+          ),
+          pickerTextStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 17,
+            color: AppColors.lightTextPrimary,
+          ),
+          dateTimePickerTextStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 17,
+            color: AppColors.lightTextPrimary,
           ),
         ),
       );
 
   /// 暗色 Cupertino 主题
-  static CupertinoThemeData get dark => const CupertinoThemeData(
+  static CupertinoThemeData get dark => CupertinoThemeData(
         brightness: Brightness.dark,
         primaryColor: AppColors.darkPrimary,
         primaryContrastingColor: CupertinoColors.white,
         scaffoldBackgroundColor: AppColors.darkBackground,
-        barBackgroundColor: Color(0xE6000000),
+        barBackgroundColor: AppColors.glassTint(Brightness.dark),
         textTheme: CupertinoTextThemeData(
           primaryColor: AppColors.darkPrimary,
-          textStyle: TextStyle(
+          textStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 17,
             color: AppColors.darkTextPrimary,
           ),
-          navTitleTextStyle: TextStyle(
+          navTitleTextStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 17,
             fontWeight: FontWeight.w600,
             color: AppColors.darkTextPrimary,
           ),
-          navLargeTitleTextStyle: TextStyle(
+          navLargeTitleTextStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 34,
             fontWeight: FontWeight.w700,
             color: AppColors.darkTextPrimary,
           ),
-          tabLabelTextStyle: TextStyle(
+          tabLabelTextStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 10,
             fontWeight: FontWeight.w500,
+            color: AppColors.darkTextSecondary,
           ),
-          navActionTextStyle: TextStyle(
+          navActionTextStyle: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 17,
             color: AppColors.darkPrimary,
+          ),
+          pickerTextStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 17,
+            color: AppColors.darkTextPrimary,
+          ),
+          dateTimePickerTextStyle: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 17,
+            color: AppColors.darkTextPrimary,
           ),
         ),
       );

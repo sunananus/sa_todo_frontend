@@ -65,6 +65,54 @@ flutter run
 flutter run -d <device_id>
 ```
 
+### 4. 在 Web 浏览器中运行
+
+Flutter 原生支持 Web 平台，无需额外配置即可在浏览器中运行应用。
+
+#### 前置条件
+
+确保已启用 Web 支持：
+
+```bash
+flutter config --enable-web
+```
+
+#### 启动开发服务器
+
+```bash
+# 列出可用设备（应能看到 Chrome 和 Web Server）
+flutter devices
+
+# 在 Chrome 中运行（推荐）
+flutter run -d chrome
+
+# 或者使用 Edge 浏览器
+flutter run -d edge
+
+# 指定端口运行
+flutter run -d chrome --web-port=8080
+```
+
+#### 构建生产版本
+
+```bash
+# 构建 Web 生产版本（输出到 build/web 目录）
+flutter build web --release
+```
+
+构建完成后，`build/web` 目录包含纯静态文件（HTML、CSS、JS），可部署到任意静态托管服务：
+
+- **Nginx / Apache**：将 `build/web` 内容复制到服务器根目录
+- **Vercel / Netlify**：直接关联 Git 仓库，构建命令设为 `flutter build web`，输出目录设为 `build/web`
+- **GitHub Pages**：将 `build/web` 内容推送到 `gh-pages` 分支
+- **本地预览**：使用 `dhttpd` 包快速预览
+
+```bash
+# 使用 dhttpd 在本地预览生产版本
+dart pub global activate dhttpd
+dhttpd --path build/web
+```
+
 ---
 
 ## 📦 打包与发布部署 (Release)
