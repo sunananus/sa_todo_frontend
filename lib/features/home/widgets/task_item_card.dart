@@ -7,6 +7,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/animated_check_box.dart';
 import '../../../core/widgets/priority_badge.dart';
+import '../../../core/widgets/tag_chip.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../data/models/task_model.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +17,9 @@ class TaskItemCard extends StatelessWidget {
   final VoidCallback onTap;
   final ValueChanged<bool> onStatusChanged;
   final VoidCallback? onDismissed;
+  final VoidCallback? onSwipeComplete;
+  final List<String> tagNames;
+  final List<TaskModel> subtasks;
 
   const TaskItemCard({
     super.key,
@@ -23,6 +27,9 @@ class TaskItemCard extends StatelessWidget {
     required this.onTap,
     required this.onStatusChanged,
     this.onDismissed,
+    this.onSwipeComplete,
+    this.tagNames = const [],
+    this.subtasks = const [],
   });
 
   @override
@@ -37,7 +44,51 @@ class TaskItemCard extends StatelessWidget {
         horizontal: AppConstants.spacingLg,
         vertical: AppConstants.spacingXs,
       ),
-      child: GlassCard(
+      child: Dismissible(
+        key: ValueKey(task.id),
+        dismissThresholds: const {
+          DismissDirection.startToEnd: 0.4,
+          DismissDirection.endToStart: 0.4,
+        },
+        confirmDismiss: (direction) async {
+          if (direction == DismissDirection.startToEnd) {
+            // 右滑完成
+            onSwipeComplete?.call();
+            return false;
+          }
+          // 左滑删除
+          return true;
+        },
+        onDismissed: (_) => onDismissed?.call(),
+        background: Container(
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          decoration: BoxDecoration(
+            color: AppColors.success.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.only(left: 24),
+          child: Icon(
+            CupertinoIcons.checkmark_circle_fill,
+            color: AppColors.success,
+            size: 28,
+          ),
+        ),
+        secondaryBackground: Container(
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          decoration: BoxDecoration(
+            color: AppColors.error.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          child: Icon(
+            CupertinoIcons.delete,
+            color: AppColors.error,
+            size: 24,
+          ),
+        ),
+        child: GlassCard(
         onTap: onTap,
         padding: const EdgeInsets.all(AppConstants.spacingMd),
         child: Row(
@@ -85,7 +136,7 @@ class TaskItemCard extends StatelessWidget {
                   ],
 
                   // 底部信息栏
-                  if (task.dueDate != null || task.priority > 0) ...[
+                  if (task.dueDate != null || task.priority > 0 || task.recurrenceRule != null) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -107,6 +158,79 @@ class TaskItemCard extends StatelessWidget {
                         ],
                         if (task.priority > 0)
                           PriorityBadge(priority: task.priority, compact: true),
+                        if (task.recurrenceRule != null) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            CupertinoIcons.repeat,
+                            size: 13,
+                            color: AppColors.textSecondary(brightness),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+
+                  // 标签
+                  if (tagNames.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: tagNames
+                          .map((name) => TagChip(label: name, compact: true))
+                          .toList(),
+                    ),
+                  ],
+
+                  // 子任务进度
+                  if (subtasks.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.list_bullet_indent,
+                          size: 14,
+                          color: AppColors.textSecondary(brightness),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${subtasks.where((s) => s.isCompleted).length}/${subtasks.length}',
+                          style: AppTextStyles.caption2.copyWith(
+                            color: AppColors.textSecondary(brightness),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final progress = subtasks.isEmpty
+                                  ? 0.0
+                                  : subtasks.where((s) => s.isCompleted).length /
+                                      subtasks.length;
+                              return Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  color: AppColors.separator(brightness)
+                                      .withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    width: constraints.maxWidth * progress,
+                                    decoration: BoxDecoration(
+                                      color: subtasks.every((s) => s.isCompleted)
+                                          ? AppColors.success
+                                          : AppColors.primary(brightness),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -115,6 +239,7 @@ class TaskItemCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     ),
     );

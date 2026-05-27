@@ -1,53 +1,62 @@
 // lib/data/repositories/list_repository.dart
-// 清单数据仓库
+// 清单数据仓库 — Drift 本地持久化 + API 同步
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../api/api_client.dart';
+import '../local/database.dart';
 import '../models/list_model.dart';
 
 final listRepositoryProvider =
-    NotifierProvider<ListRepository, List<ListModel>>(ListRepository.new);
+    AsyncNotifierProvider<ListRepository, List<ListModel>>(ListRepository.new);
 
-class ListRepository extends Notifier<List<ListModel>> {
+class ListRepository extends AsyncNotifier<List<ListModel>> {
   final _uuid = const Uuid();
-  final List<ListModel> _lists = [];
 
+  AppDatabase get _db => ref.read(appDatabaseProvider);
   ApiClient get _api => ref.read(apiClientProvider);
 
   @override
-  List<ListModel> build() => [];
+  Future<List<ListModel>> build() => _loadFromDb();
 
-  List<ListModel> get _visibleLists =>
-      _lists.where((l) => !l.isDeleted).toList()
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-  void _notify() => state = _visibleLists;
-
-  ListModel? getListById(String id) {
-    try {
-      return _lists.firstWhere((l) => l.id == id);
-    } catch (_) {
-      return null;
-    }
+  Future<List<ListModel>> _loadFromDb() async {
+    final entities = await _db.getAllLists();
+    final models = entities.map(ListModel.fromEntity).toList();
+    models.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return models;
   }
 
-  List<ListModel> get unsyncedLists =>
-      _lists.where((l) => l.syncStatus == 0).toList();
+  Future<void> _notify() async {
+    state = AsyncData(await _loadFromDb());
+  }
+
+  Future<ListModel?> getListById(String id) async {
+    final entity = await _db.getListById(id);
+    return entity != null ? ListModel.fromEntity(entity) : null;
+  }
+
+  Future<List<ListModel>> get unsyncedLists async {
+    final entities = await _db.getUnsyncedLists();
+    return entities.map(ListModel.fromEntity).toList();
+  }
 
   Future<void> loadFromServer() async {
     try {
       final response = await _api.getLists();
       if (response.isSuccess && response.data != null) {
-        _lists.clear();
-        _lists.addAll(response.data!.map((j) => ListModel.fromJson(j)));
+        final serverLists =
+            response.data!.map((j) => ListModel.fromJson(j)).toList();
+        for (final list in serverLists) {
+          await _db.insertList(list.toEntity().toCompanion(true));
+        }
       }
     } catch (_) {}
 
     // 确保收集箱存在
-    if (!_lists.any((l) => l.id == 'inbox')) {
+    final inbox = await _db.getListById('inbox');
+    if (inbox == null) {
       final now = DateTime.now().toUtc();
-      _lists.insert(0, ListModel(
+      await _db.insertList(ListModel(
         id: 'inbox',
         name: '收集箱',
         colorCode: '#4A90D9',
@@ -55,9 +64,9 @@ class ListRepository extends Notifier<List<ListModel>> {
         createdAt: now,
         updatedAt: now,
         syncStatus: 1,
-      ));
+      ).toEntity().toCompanion(true));
     }
-    _notify();
+    await _notify();
   }
 
   Future<ListModel> createList({
@@ -66,25 +75,26 @@ class ListRepository extends Notifier<List<ListModel>> {
     int? sortOrder,
   }) async {
     final now = DateTime.now().toUtc();
+    final existing = state.valueOrNull ?? [];
     final list = ListModel(
       id: _uuid.v4(),
       name: name,
       colorCode: colorCode,
-      sortOrder: sortOrder ?? _lists.length,
+      sortOrder: sortOrder ?? existing.length,
       createdAt: now,
       updatedAt: now,
       syncStatus: 0,
     );
 
-    _lists.add(list);
-    _notify();
+    await _db.insertList(list.toEntity().toCompanion(true));
+    await _notify();
 
     try {
       final response = await _api.createList(list.toJson());
       if (response.isSuccess) {
-        final index = _lists.indexWhere((l) => l.id == list.id);
-        if (index >= 0) _lists[index] = list.copyWith(syncStatus: 1);
-        _notify();
+        final synced = list.copyWith(syncStatus: 1);
+        await _db.updateList(synced.toEntity().toCompanion(true));
+        await _notify();
       }
     } catch (_) {}
 
@@ -96,49 +106,51 @@ class ListRepository extends Notifier<List<ListModel>> {
       updatedAt: DateTime.now().toUtc(),
       syncStatus: 0,
     );
-    final index = _lists.indexWhere((l) => l.id == list.id);
-    if (index >= 0) _lists[index] = updated;
-    _notify();
+    await _db.updateList(updated.toEntity().toCompanion(true));
+    await _notify();
 
     try {
       await _api.updateList(list.id, updated.toJson());
-      final idx = _lists.indexWhere((l) => l.id == list.id);
-      if (idx >= 0) _lists[idx] = updated.copyWith(syncStatus: 1);
-      _notify();
+      final synced = updated.copyWith(syncStatus: 1);
+      await _db.updateList(synced.toEntity().toCompanion(true));
+      await _notify();
     } catch (_) {}
 
     return updated;
   }
 
   Future<void> deleteList(String listId) async {
-    if (listId == 'inbox') return; // 不允许删除收集箱
+    if (listId == 'inbox') return;
     final now = DateTime.now().toUtc();
-    final index = _lists.indexWhere((l) => l.id == listId);
-    if (index >= 0) {
-      _lists[index] = _lists[index].copyWith(
-        isDeleted: true,
-        updatedAt: now,
-        syncStatus: 0,
-      );
-    }
-    _notify();
+    final entity = await _db.getListById(listId);
+    if (entity == null) return;
+    final list = ListModel.fromEntity(entity);
+
+    final deleted = list.copyWith(
+      isDeleted: true,
+      updatedAt: now,
+      syncStatus: 0,
+    );
+    await _db.updateList(deleted.toEntity().toCompanion(true));
+    await _notify();
+
     try {
       await _api.deleteList(listId);
     } catch (_) {}
   }
 
-  void mergeFromServer(List<ListModel> serverLists) {
+  Future<void> mergeFromServer(List<ListModel> serverLists) async {
     for (final serverList in serverLists) {
-      final index = _lists.indexWhere((l) => l.id == serverList.id);
-      if (index >= 0) {
-        final local = _lists[index];
+      final localEntity = await _db.getListById(serverList.id);
+      if (localEntity != null) {
+        final local = ListModel.fromEntity(localEntity);
         if (serverList.updatedAt.isAfter(local.updatedAt)) {
-          _lists[index] = serverList;
+          await _db.updateList(serverList.toEntity().toCompanion(true));
         }
       } else {
-        _lists.add(serverList);
+        await _db.insertList(serverList.toEntity().toCompanion(true));
       }
     }
-    _notify();
+    await _notify();
   }
 }

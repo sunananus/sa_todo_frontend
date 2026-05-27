@@ -10,6 +10,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/list_repository.dart';
+import '../../data/repositories/tag_repository.dart';
 import '../../data/repositories/sync_repository.dart';
 import '../widget/widget_provider.dart';
 import 'home_provider.dart';
@@ -66,13 +67,16 @@ class _HomePageState extends ConsumerState<HomePage>
     ref.listen(taskRepositoryProvider, (prev, next) {
       ref.read(widgetServiceProvider).refreshWidget();
     });
-    final lists = ref.watch(listRepositoryProvider);
-    final listRepo = ref.read(listRepositoryProvider.notifier);
+    final listsAsync = ref.watch(listRepositoryProvider);
+    final lists = listsAsync.valueOrNull ?? [];
+    final tagsAsync = ref.watch(tagRepositoryProvider);
+    final allTags = tagsAsync.valueOrNull ?? [];
+    final tagRepo = ref.read(tagRepositoryProvider.notifier);
     final selectedListId = ref.watch(selectedListIdProvider);
     final syncState = ref.watch(syncStateProvider);
 
     final selectedList = selectedListId != null
-        ? listRepo.getListById(selectedListId)
+        ? lists.where((l) => l.id == selectedListId).firstOrNull
         : null;
 
     return CupertinoPageScaffold(
@@ -121,7 +125,9 @@ class _HomePageState extends ConsumerState<HomePage>
               // 导航栏
               CupertinoSliverNavigationBar(
                 largeTitle: Text(
-                  selectedList?.name ?? '全部任务',
+                  ref.watch(isSearchModeProvider)
+                      ? '搜索结果'
+                      : selectedList?.name ?? '全部任务',
                   style: AppTextStyles.largeTitleBold.copyWith(
                     color: AppColors.textPrimary(brightness),
                   ),
@@ -129,6 +135,24 @@ class _HomePageState extends ConsumerState<HomePage>
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // 搜索按钮
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        final isSearch = ref.read(isSearchModeProvider);
+                        if (isSearch) {
+                          ref.read(searchQueryProvider.notifier).state = '';
+                        } else {
+                          _showSearchBar(context, ref);
+                        }
+                      },
+                      child: Icon(
+                        ref.watch(isSearchModeProvider)
+                            ? CupertinoIcons.xmark_circle_fill
+                            : CupertinoIcons.search,
+                        color: AppColors.primary(brightness),
+                      ),
+                    ),
                     // 同步按钮
                     CupertinoButton(
                       padding: EdgeInsets.zero,
@@ -205,14 +229,18 @@ class _HomePageState extends ConsumerState<HomePage>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          '没有待办事项',
+                          ref.watch(isSearchModeProvider)
+                              ? '没有找到匹配的任务'
+                              : '没有待办事项',
                           style: AppTextStyles.title3.copyWith(
                             color: AppColors.textSecondary(brightness),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '点击底部 + 快速添加',
+                          ref.watch(isSearchModeProvider)
+                              ? '试试其他关键词'
+                              : '点击底部 + 快速添加',
                           style: AppTextStyles.footnote.copyWith(
                             color: AppColors.textSecondary(brightness)
                                 .withValues(alpha: 0.6),
@@ -226,15 +254,64 @@ class _HomePageState extends ConsumerState<HomePage>
               else
                 SliverPadding(
                   padding: const EdgeInsets.only(top: 8, bottom: 100),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
+                  sliver: SliverReorderableList(
+                    itemCount: tasks.length,
+                    onReorder: (oldIndex, newIndex) async {
+                      if (newIndex > oldIndex) newIndex--;
+                      final taskIds = tasks.map((t) => t.id).toList();
+                      final item = taskIds.removeAt(oldIndex);
+                      taskIds.insert(newIndex, item);
+                      await ref.read(taskRepositoryProvider.notifier).reorderTasks(taskIds);
+                    },
+                    itemBuilder: (context, index) {
                         final task = tasks[index];
+                        final allTasks = ref.read(taskRepositoryProvider).valueOrNull ?? [];
+                        final taskSubtasks = allTasks.where((t) => t.parentId == task.id).toList();
+                        final taskTagNames = tagRepo.taskTags
+                            .where((tt) => tt.taskId == task.id)
+                            .map((tt) => allTags
+                                .where((t) => t.id == tt.tagId)
+                                .map((t) => t.name)
+                                .firstOrNull)
+                            .whereType<String>()
+                            .toList();
                         return TaskItemCard(
+                          key: ValueKey(task.id),
                           task: task,
+                          tagNames: taskTagNames,
+                          subtasks: taskSubtasks,
                           onTap: () => context.push('/task/${task.id}'),
                           onStatusChanged: (checked) async {
                             await ref.read(taskRepositoryProvider.notifier).toggleTaskStatus(task.id);
+                          },
+                          onSwipeComplete: () async {
+                            final taskRepo = ref.read(taskRepositoryProvider.notifier);
+                            await taskRepo.toggleTaskStatus(task.id);
+                            if (mounted) {
+                              _showUndoSnackBar(
+                                task.isCompleted ? '任务已恢复' : '任务已完成',
+                                () async => await taskRepo.toggleTaskStatus(task.id),
+                              );
+                            }
+                          },
+                          onDismissed: () async {
+                            final taskRepo = ref.read(taskRepositoryProvider.notifier);
+                            final deletedTask = task;
+                            await taskRepo.deleteTask(task.id);
+                            if (mounted) {
+                              _showUndoSnackBar('任务已删除', () async {
+                                // 恢复已删除的任务（重新创建）
+                                await taskRepo.createTask(
+                                  title: deletedTask.title,
+                                  description: deletedTask.description,
+                                  listId: deletedTask.listId,
+                                  priority: deletedTask.priority,
+                                  dueDate: deletedTask.dueDate,
+                                  parentId: deletedTask.parentId,
+                                  recurrenceRule: deletedTask.recurrenceRule,
+                                );
+                              });
+                            }
                           },
                         )
                             .animate()
@@ -250,9 +327,13 @@ class _HomePageState extends ConsumerState<HomePage>
                               curve: Curves.easeOut,
                             );
                       },
-                      childCount: tasks.length,
-                    ),
                   ),
+                ),
+
+              // 已完成任务折叠区域
+              if (!ref.watch(isSearchModeProvider))
+                SliverToBoxAdapter(
+                  child: _buildCompletedSection(brightness),
                 ),
             ],
           ),
@@ -264,11 +345,27 @@ class _HomePageState extends ConsumerState<HomePage>
             bottom: (MediaQuery.sizeOf(context).width >= AppConstants.kDesktopBreakpoint ? 0 : 50) + MediaQuery.paddingOf(context).bottom,
             child: QuickAddBar(
               initialExpanded: GoRouterState.of(context).uri.queryParameters['action'] == 'quickadd',
-              onSubmit: (title) async {
+              onSubmit: (title, parsed) async {
                 await ref.read(taskRepositoryProvider.notifier).createTask(
                   title: title,
                   listId: selectedListId ?? AppConstants.inboxListId,
+                  dueDate: parsed.dueDate,
+                  priority: parsed.priority,
+                  recurrenceRule: parsed.recurrenceRule,
                 );
+                // 添加标签
+                if (parsed.tags.isNotEmpty) {
+                  final tagRepo = ref.read(tagRepositoryProvider.notifier);
+                  for (final tagName in parsed.tags) {
+                    final existingTags = ref.read(tagRepositoryProvider).valueOrNull ?? [];
+                    final existing = existingTags.where((t) => t.name == tagName).firstOrNull;
+                    final tag = existing ?? await tagRepo.createTag(name: tagName);
+                    // 获取刚创建的任务 ID
+                    final tasks = ref.read(taskRepositoryProvider).valueOrNull ?? [];
+                    final newTask = tasks.first;
+                    tagRepo.addTagToTask(newTask.id, tag.id);
+                  }
+                }
               },
             ),
           ),
@@ -316,8 +413,150 @@ class _HomePageState extends ConsumerState<HomePage>
     );
   }
 
+  void _showUndoSnackBar(String message, Future<void> Function() onUndo) {
+    final brightness = CupertinoTheme.brightnessOf(context);
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (ctx) => Positioned(
+        bottom: 120 + MediaQuery.paddingOf(context).bottom,
+        left: 24,
+        right: 24,
+        child: GestureDetector(
+          onTap: () => entry.remove(),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surface(brightness).withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.separator(brightness).withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  child: Text(message, style: AppTextStyles.body.copyWith(
+                    color: AppColors.textPrimary(brightness),
+                  )),
+                ),
+                const SizedBox(width: 16),
+                GestureDetector(
+                  onTap: () async {
+                    entry.remove();
+                    await onUndo();
+                  },
+                  child: Text('撤销', style: AppTextStyles.body.copyWith(
+                    color: AppColors.primary(brightness),
+                    fontWeight: FontWeight.w600,
+                  )),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (entry.mounted) entry.remove();
+    });
+  }
+
+  void _showSearchBar(BuildContext context, WidgetRef ref) {
+    final brightness = CupertinoTheme.brightnessOf(context);
+    showCupertinoDialog(
+      context: context,
+      builder: (_) {
+        final controller = TextEditingController();
+        return CupertinoAlertDialog(
+          title: const Text('搜索任务'),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: CupertinoTextField(
+              controller: controller,
+              placeholder: '输入关键词...',
+              autofocus: true,
+              suffix: GestureDetector(
+                onTap: () {
+                  ref.read(searchQueryProvider.notifier).state =
+                      controller.text.trim();
+                  Navigator.pop(context);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Icon(CupertinoIcons.search,
+                      size: 20,
+                      color: AppColors.primary(brightness)),
+                ),
+              ),
+              onSubmitted: (value) {
+                ref.read(searchQueryProvider.notifier).state =
+                    value.trim();
+                Navigator.pop(context);
+              },
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('取消'),
+              onPressed: () => Navigator.pop(context),
+            ),
+            CupertinoDialogAction(
+              child: const Text('搜索'),
+              onPressed: () {
+                ref.read(searchQueryProvider.notifier).state =
+                    controller.text.trim();
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Color _parseColor(String hex) {
     final hexCode = hex.replaceAll('#', '');
     return Color(int.parse('FF$hexCode', radix: 16));
+  }
+
+  Widget _buildCompletedSection(Brightness brightness) {
+    final completedCount = ref.watch(completedCountProvider);
+    final showCompleted = ref.watch(showCompletedProvider);
+
+    if (completedCount == 0) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: () => ref.read(showCompletedProvider.notifier).state = !showCompleted,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  showCompleted
+                      ? CupertinoIcons.chevron_down
+                      : CupertinoIcons.chevron_right,
+                  size: 14,
+                  color: AppColors.textSecondary(brightness),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '已完成 ($completedCount)',
+                  style: AppTextStyles.footnote.copyWith(
+                    color: AppColors.textSecondary(brightness),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

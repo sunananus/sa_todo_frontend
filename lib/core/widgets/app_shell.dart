@@ -20,9 +20,19 @@ class AppShell extends StatelessWidget {
       label: '任务',
     ),
     GlassTabItem(
+      icon: CupertinoIcons.sun_max,
+      activeIcon: CupertinoIcons.sun_max_fill,
+      label: '今天',
+    ),
+    GlassTabItem(
       icon: CupertinoIcons.chart_bar,
       activeIcon: CupertinoIcons.chart_bar_fill,
       label: '统计',
+    ),
+    GlassTabItem(
+      icon: CupertinoIcons.calendar,
+      activeIcon: CupertinoIcons.calendar_today,
+      label: '日历',
     ),
     GlassTabItem(
       icon: CupertinoIcons.folder,

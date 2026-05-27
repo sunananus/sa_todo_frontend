@@ -1,6 +1,8 @@
 // lib/data/models/tag_model.dart
 // 标签数据模型
 
+import '../local/database.dart';
+
 class TagModel {
   final String id;
   final String name;
@@ -56,4 +58,22 @@ class TagModel {
       'is_deleted': isDeleted,
     };
   }
+
+  TagEntity toEntity() => TagEntity(
+        id: id,
+        name: name,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        isDeleted: isDeleted,
+        syncStatus: syncStatus,
+      );
+
+  factory TagModel.fromEntity(TagEntity entity) => TagModel(
+        id: entity.id,
+        name: entity.name,
+        createdAt: entity.createdAt,
+        updatedAt: entity.updatedAt,
+        isDeleted: entity.isDeleted,
+        syncStatus: entity.syncStatus,
+      );
 }

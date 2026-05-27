@@ -23,9 +23,6 @@ class SyncRepository {
   SyncRepository({required Ref ref}) : _ref = ref;
 
   ApiClient get _api => _ref.read(apiClientProvider);
-  TaskRepository get _taskRepo => _ref.read(taskRepositoryProvider.notifier);
-  ListRepository get _listRepo => _ref.read(listRepositoryProvider.notifier);
-  TagRepository get _tagRepo => _ref.read(tagRepositoryProvider);
 
   /// 执行全量同步（先 push 再 pull）
   Future<SyncResult> syncFull() async {
@@ -35,11 +32,19 @@ class SyncRepository {
           '1970-01-01T00:00:00Z';
 
       // 收集本地未同步的变更
+      final taskRepo = _ref.read(taskRepositoryProvider.notifier);
+      final listRepo = _ref.read(listRepositoryProvider.notifier);
+      final tagRepo = _ref.read(tagRepositoryProvider.notifier);
+
+      final unsyncedTasks = await taskRepo.unsyncedTasks;
+      final unsyncedLists = await listRepo.unsyncedLists;
+      final unsyncedTags = await tagRepo.unsyncedTags;
+
       final changes = <String, dynamic>{
-        'tasks': _taskRepo.unsyncedTasks.map((t) => t.toJson()).toList(),
-        'lists': _listRepo.unsyncedLists.map((l) => l.toJson()).toList(),
-        'tags': _tagRepo.unsyncedTags.map((t) => t.toJson()).toList(),
-        'task_tags': _tagRepo.unsyncedTaskTags.map((tt) => tt.toJson()).toList(),
+        'tasks': unsyncedTasks.map((t) => t.toJson()).toList(),
+        'lists': unsyncedLists.map((l) => l.toJson()).toList(),
+        'tags': unsyncedTags.map((t) => t.toJson()).toList(),
+        'task_tags': tagRepo.unsyncedTaskTags.map((tt) => tt.toJson()).toList(),
       };
 
       final response = await _api.syncFull({
@@ -57,19 +62,18 @@ class SyncRepository {
       final serverChanges =
           data['server_changes'] as Map<String, dynamic>? ?? {};
 
-      // 合并服务端数据
       if (serverChanges['tasks'] != null) {
         final serverTasks = (serverChanges['tasks'] as List)
             .map((j) => TaskModel.fromJson(j as Map<String, dynamic>))
             .toList();
-        _taskRepo.mergeFromServer(serverTasks);
+        await taskRepo.mergeFromServer(serverTasks);
       }
 
       if (serverChanges['lists'] != null) {
         final serverLists = (serverChanges['lists'] as List)
             .map((j) => ListModel.fromJson(j as Map<String, dynamic>))
             .toList();
-        _listRepo.mergeFromServer(serverLists);
+        await listRepo.mergeFromServer(serverLists);
       }
 
       if (serverChanges['tags'] != null || serverChanges['task_tags'] != null) {
@@ -83,7 +87,7 @@ class SyncRepository {
                 .map((j) => TaskTagModel.fromJson(j as Map<String, dynamic>))
                 .toList()
             : <TaskTagModel>[];
-        _tagRepo.mergeFromServer(serverTags, serverTaskTags);
+        await tagRepo.mergeFromServer(serverTags, serverTaskTags);
       }
 
       // 保存服务端时间为下次同步时间
@@ -110,9 +114,9 @@ class SyncRepository {
 
   /// 初始加载：从服务器获取全量数据
   Future<void> initialLoad() async {
-    await _listRepo.loadFromServer();
-    await _tagRepo.loadFromServer();
-    await _taskRepo.loadFromServer();
+    await _ref.read(listRepositoryProvider.notifier).loadFromServer();
+    await _ref.read(tagRepositoryProvider.notifier).loadFromServer();
+    await _ref.read(taskRepositoryProvider.notifier).loadFromServer();
   }
 }
 

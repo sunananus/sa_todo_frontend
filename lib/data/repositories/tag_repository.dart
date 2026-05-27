@@ -1,54 +1,68 @@
 // lib/data/repositories/tag_repository.dart
-// 标签数据仓库
+// 标签数据仓库 — Drift 本地持久化 + API 同步
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../api/api_client.dart';
+import '../local/database.dart';
 import '../models/tag_model.dart';
 import '../models/task_tag_model.dart';
 
-final tagRepositoryProvider = Provider<TagRepository>((ref) {
-  return TagRepository(ref.read(apiClientProvider));
-});
+final tagRepositoryProvider =
+    AsyncNotifierProvider<TagRepository, List<TagModel>>(TagRepository.new);
 
-class TagRepository {
-  final ApiClient _api;
+class TagRepository extends AsyncNotifier<List<TagModel>> {
   final _uuid = const Uuid();
-  final List<TagModel> _tags = [];
+
+  AppDatabase get _db => ref.read(appDatabaseProvider);
+  ApiClient get _api => ref.read(apiClientProvider);
+
+  // TaskTags 内存缓存（无 syncStatus，全量推送）
   final List<TaskTagModel> _taskTags = [];
 
-  TagRepository(this._api);
+  @override
+  Future<List<TagModel>> build() => _loadFromDb();
 
-  List<TagModel> get tags => List.unmodifiable(
-      _tags.where((t) => !t.isDeleted).toList()
-        ..sort((a, b) => a.name.compareTo(b.name)),
-    );
+  Future<List<TagModel>> _loadFromDb() async {
+    final entities = await _db.getAllTags();
+    final models = entities.map(TagModel.fromEntity).toList();
+    models.sort((a, b) => a.name.compareTo(b.name));
+    return models;
+  }
+
+  Future<void> _notify() async {
+    state = AsyncData(await _loadFromDb());
+  }
 
   List<TaskTagModel> get taskTags =>
       List.unmodifiable(_taskTags.where((tt) => !tt.isDeleted).toList());
 
-  List<TagModel> getTagsForTask(String taskId) {
-    final tagIds = _taskTags
-        .where((tt) => tt.taskId == taskId && !tt.isDeleted)
-        .map((tt) => tt.tagId)
-        .toSet();
-    return tags.where((t) => tagIds.contains(t.id)).toList();
+  Future<List<TagModel>> getTagsForTask(String taskId) async {
+    final entities = await _db.getTaskTagsForTask(taskId);
+    final tagIds = entities.map((e) => e.tagId).toSet();
+    final allTags = state.valueOrNull ?? [];
+    return allTags.where((t) => tagIds.contains(t.id)).toList();
   }
 
-  List<TagModel> get unsyncedTags =>
-      _tags.where((t) => t.syncStatus == 0).toList();
+  Future<List<TagModel>> get unsyncedTags async {
+    final entities = await _db.getUnsyncedTags();
+    return entities.map(TagModel.fromEntity).toList();
+  }
 
-  List<TaskTagModel> get unsyncedTaskTags =>
-      _taskTags.toList(); // TaskTag 没有 syncStatus，全量推送
+  List<TaskTagModel> get unsyncedTaskTags => _taskTags.toList();
 
   Future<void> loadFromServer() async {
     try {
       final response = await _api.getTags();
       if (response.isSuccess && response.data != null) {
-        _tags.clear();
-        _tags.addAll(response.data!.map((j) => TagModel.fromJson(j)));
+        final serverTags =
+            response.data!.map((j) => TagModel.fromJson(j)).toList();
+        for (final tag in serverTags) {
+          await _db.insertTag(tag.toEntity().toCompanion(true));
+        }
       }
     } catch (_) {}
+    await _notify();
   }
 
   Future<TagModel> createTag({required String name}) async {
@@ -61,13 +75,15 @@ class TagRepository {
       syncStatus: 0,
     );
 
-    _tags.add(tag);
+    await _db.insertTag(tag.toEntity().toCompanion(true));
+    await _notify();
 
     try {
       final response = await _api.createTag(tag.toJson());
       if (response.isSuccess) {
-        final index = _tags.indexWhere((t) => t.id == tag.id);
-        if (index >= 0) _tags[index] = tag.copyWith(syncStatus: 1);
+        final synced = tag.copyWith(syncStatus: 1);
+        await _db.updateTag(synced.toEntity().toCompanion(true));
+        await _notify();
       }
     } catch (_) {}
 
@@ -79,8 +95,8 @@ class TagRepository {
       updatedAt: DateTime.now().toUtc(),
       syncStatus: 0,
     );
-    final index = _tags.indexWhere((t) => t.id == tag.id);
-    if (index >= 0) _tags[index] = updated;
+    await _db.updateTag(updated.toEntity().toCompanion(true));
+    await _notify();
 
     try {
       await _api.updateTag(tag.id, updated.toJson());
@@ -91,14 +107,18 @@ class TagRepository {
 
   Future<void> deleteTag(String tagId) async {
     final now = DateTime.now().toUtc();
-    final index = _tags.indexWhere((t) => t.id == tagId);
-    if (index >= 0) {
-      _tags[index] = _tags[index].copyWith(
-        isDeleted: true,
-        updatedAt: now,
-        syncStatus: 0,
-      );
-    }
+    final entity = await _db.getTagById(tagId);
+    if (entity == null) return;
+    final tag = TagModel.fromEntity(entity);
+
+    final deleted = tag.copyWith(
+      isDeleted: true,
+      updatedAt: now,
+      syncStatus: 0,
+    );
+    await _db.updateTag(deleted.toEntity().toCompanion(true));
+    await _notify();
+
     try {
       await _api.deleteTag(tagId);
     } catch (_) {}
@@ -128,15 +148,17 @@ class TagRepository {
     }
   }
 
-  void mergeFromServer(List<TagModel> serverTags, List<TaskTagModel> serverTaskTags) {
+  Future<void> mergeFromServer(
+      List<TagModel> serverTags, List<TaskTagModel> serverTaskTags) async {
     for (final serverTag in serverTags) {
-      final index = _tags.indexWhere((t) => t.id == serverTag.id);
-      if (index >= 0) {
-        if (serverTag.updatedAt.isAfter(_tags[index].updatedAt)) {
-          _tags[index] = serverTag;
+      final localEntity = await _db.getTagById(serverTag.id);
+      if (localEntity != null) {
+        final local = TagModel.fromEntity(localEntity);
+        if (serverTag.updatedAt.isAfter(local.updatedAt)) {
+          await _db.updateTag(serverTag.toEntity().toCompanion(true));
         }
       } else {
-        _tags.add(serverTag);
+        await _db.insertTag(serverTag.toEntity().toCompanion(true));
       }
     }
     // TaskTags 简单替换
@@ -148,5 +170,6 @@ class TagRepository {
         _taskTags.add(serverTT);
       }
     }
+    await _notify();
   }
 }

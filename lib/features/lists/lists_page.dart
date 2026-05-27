@@ -12,14 +12,17 @@ import '../../data/repositories/list_repository.dart';
 import '../../data/repositories/task_repository.dart';
 import '../home/home_provider.dart';
 
+
 class ListsPage extends ConsumerWidget {
   const ListsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = CupertinoTheme.brightnessOf(context);
-    final lists = ref.watch(listRepositoryProvider);
-    final taskRepo = ref.read(taskRepositoryProvider.notifier);
+    final listsAsync = ref.watch(listRepositoryProvider);
+    final lists = listsAsync.valueOrNull ?? [];
+    final tasksAsync = ref.watch(taskRepositoryProvider);
+    final allTasks = tasksAsync.valueOrNull ?? [];
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.background(brightness),
@@ -45,9 +48,8 @@ class ListsPage extends ConsumerWidget {
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final list = lists[index];
-                  final taskCount = taskRepo
-                      .getTasksByListId(list.id)
-                      .where((t) => !t.isCompleted)
+                  final taskCount = allTasks
+                      .where((t) => t.listId == list.id && !t.isCompleted)
                       .length;
 
                   return Padding(

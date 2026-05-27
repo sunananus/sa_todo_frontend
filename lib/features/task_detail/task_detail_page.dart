@@ -11,8 +11,13 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/priority_badge.dart';
+import '../../core/widgets/tag_chip.dart';
+import '../../data/models/task_model.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/list_repository.dart';
+import '../../data/repositories/tag_repository.dart';
+import '../../core/notifications/notification_service.dart';
+import '../focus/focus_page.dart';
 
 class TaskDetailPage extends ConsumerStatefulWidget {
   final String taskId;
@@ -29,18 +34,44 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
   int _priority = 0;
   String _listId = 'inbox';
   DateTime? _dueDate;
-
+  TaskModel? _task;
+  bool _loading = true;
+  List<String> _taskTagIds = [];
+  List<TaskModel> _subtasks = [];
+  String? _recurrenceRule;
+  DateTime? _reminderAt;
 
   @override
   void initState() {
     super.initState();
+    _titleController = TextEditingController();
+    _descController = TextEditingController();
+    _loadTask();
+  }
+
+  Future<void> _loadTask() async {
     final taskRepo = ref.read(taskRepositoryProvider.notifier);
-    final task = taskRepo.getTaskById(widget.taskId);
-    _titleController = TextEditingController(text: task?.title ?? '');
-    _descController = TextEditingController(text: task?.description ?? '');
-    _priority = task?.priority ?? 0;
-    _listId = task?.listId ?? 'inbox';
-    _dueDate = task?.dueDate;
+    final task = await taskRepo.getTaskById(widget.taskId);
+    if (task != null && mounted) {
+      final tagRepo = ref.read(tagRepositoryProvider.notifier);
+      final taskTags = await tagRepo.getTagsForTask(widget.taskId);
+      final subtasks = await taskRepo.getSubtasks(widget.taskId);
+      setState(() {
+        _task = task;
+        _titleController.text = task.title;
+        _descController.text = task.description;
+        _priority = task.priority;
+        _listId = task.listId;
+        _dueDate = task.dueDate;
+        _taskTagIds = taskTags.map((t) => t.id).toList();
+        _subtasks = subtasks;
+        _recurrenceRule = task.recurrenceRule;
+        _reminderAt = task.reminderAt;
+        _loading = false;
+      });
+    } else if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -51,18 +82,34 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
   }
 
   Future<void> _save() async {
+    if (_task == null) return;
     final taskRepo = ref.read(taskRepositoryProvider.notifier);
-    final task = taskRepo.getTaskById(widget.taskId);
-    if (task == null) return;
 
-    await taskRepo.updateTask(task.copyWith(
+    await taskRepo.updateTask(_task!.copyWith(
       title: _titleController.text.trim(),
       description: _descController.text.trim(),
       priority: _priority,
       listId: _listId,
       dueDate: _dueDate,
-      clearDueDate: _dueDate == null && task.dueDate != null,
+      clearDueDate: _dueDate == null && _task!.dueDate != null,
+      recurrenceRule: _recurrenceRule,
+      clearRecurrenceRule: _recurrenceRule == null && _task!.recurrenceRule != null,
+      reminderAt: _reminderAt,
+      clearReminderAt: _reminderAt == null && _task!.reminderAt != null,
     ));
+
+    // 调度或取消通知
+    final notifId = _task!.id.hashCode;
+    if (_reminderAt != null) {
+      await NotificationService().scheduleReminder(
+        id: notifId,
+        title: '任务提醒',
+        body: _titleController.text.trim(),
+        scheduledTime: _reminderAt!,
+      );
+    } else {
+      await NotificationService().cancel(notifId);
+    }
 
     if (mounted) context.pop();
   }
@@ -75,16 +122,21 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
   @override
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.brightnessOf(context);
-    final taskRepo = ref.read(taskRepositoryProvider.notifier);
-    final task = taskRepo.getTaskById(widget.taskId);
-    final lists = ref.watch(listRepositoryProvider);
+    final listsAsync = ref.watch(listRepositoryProvider);
+    final lists = listsAsync.valueOrNull ?? [];
 
-    if (task == null) {
+    if (_loading) {
       return CupertinoPageScaffold(
         backgroundColor: AppColors.background(brightness),
-        navigationBar: const CupertinoNavigationBar(
-          middle: Text('任务详情'),
-        ),
+        navigationBar: const CupertinoNavigationBar(middle: Text('任务详情')),
+        child: const Center(child: CupertinoActivityIndicator()),
+      );
+    }
+
+    if (_task == null) {
+      return CupertinoPageScaffold(
+        backgroundColor: AppColors.background(brightness),
+        navigationBar: const CupertinoNavigationBar(middle: Text('任务详情')),
         child: const Center(child: Text('任务不存在')),
       );
     }
@@ -128,7 +180,6 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                     color: AppColors.textSecondary(brightness)
                         .withValues(alpha: 0.5),
                   ),
-
                 ),
               ).animate().fadeIn(duration: AppConstants.animNormal).slideY(begin: 0.1, end: 0, duration: AppConstants.animNormal, curve: Curves.easeOut),
 
@@ -148,7 +199,6 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                     color: AppColors.textSecondary(brightness)
                         .withValues(alpha: 0.5),
                   ),
-
                 ),
               ).animate().fadeIn(delay: 50.ms, duration: AppConstants.animNormal).slideY(begin: 0.1, end: 0, delay: 50.ms, duration: AppConstants.animNormal, curve: Curves.easeOut),
 
@@ -158,7 +208,6 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
               GlassCard(
                 child: Column(
                   children: [
-                    // 清单选择
                     _buildRow(
                       context,
                       icon: CupertinoIcons.tray,
@@ -171,8 +220,6 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                       onTap: () => _showListPicker(context, lists),
                     ),
                     _buildDivider(brightness),
-
-                    // 优先级选择
                     _buildRow(
                       context,
                       icon: CupertinoIcons.flag,
@@ -181,8 +228,6 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                       onTap: () => _showPriorityPicker(context),
                     ),
                     _buildDivider(brightness),
-
-                    // 截止日期
                     _buildRow(
                       context,
                       icon: CupertinoIcons.calendar,
@@ -196,9 +241,34 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                           : null,
                       onTap: () => _showDatePicker(context),
                     ),
+                    _buildDivider(brightness),
+                    _buildRow(
+                      context,
+                      icon: CupertinoIcons.repeat,
+                      label: '重复',
+                      value: _recurrenceLabel,
+                      onTap: () => _showRecurrencePicker(context),
+                    ),
+                    _buildDivider(brightness),
+                    _buildRow(
+                      context,
+                      icon: CupertinoIcons.bell,
+                      label: '提醒',
+                      value: _reminderAt != null
+                          ? DateFormat('M/d HH:mm').format(_reminderAt!.toLocal())
+                          : '无',
+                      onTap: () => _showReminderPicker(context),
+                    ),
+                    _buildDivider(brightness),
+                    _buildTagRow(context),
                   ],
                 ),
               ).animate().fadeIn(delay: 100.ms, duration: AppConstants.animNormal).slideY(begin: 0.1, end: 0, delay: 100.ms, duration: AppConstants.animNormal, curve: Curves.easeOut),
+
+              const SizedBox(height: 16),
+
+              // 子任务
+              _buildSubtaskSection(brightness),
 
               const SizedBox(height: 24),
 
@@ -209,16 +279,16 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '创建于 ${DateFormat('yyyy-MM-dd HH:mm').format(task.createdAt.toLocal())}',
+                      '创建于 ${DateFormat('yyyy-MM-dd HH:mm').format(_task!.createdAt.toLocal())}',
                       style: AppTextStyles.caption1.copyWith(
                         color: AppColors.textSecondary(brightness)
                             .withValues(alpha: 0.6),
                       ),
                     ),
-                    if (task.completedAt != null) ...[
+                    if (_task!.completedAt != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        '完成于 ${DateFormat('yyyy-MM-dd HH:mm').format(task.completedAt!.toLocal())}',
+                        '完成于 ${DateFormat('yyyy-MM-dd HH:mm').format(_task!.completedAt!.toLocal())}',
                         style: AppTextStyles.caption1.copyWith(
                           color: AppColors.success.withValues(alpha: 0.8),
                         ),
@@ -228,7 +298,40 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                 ),
               ).animate().fadeIn(delay: 150.ms, duration: AppConstants.animNormal),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+
+              // 专注按钮
+              SizedBox(
+                width: double.infinity,
+                child: CupertinoButton(
+                  color: AppColors.primary(brightness).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (_) => FocusPage(taskTitle: _task!.title),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(CupertinoIcons.timer, color: AppColors.primary(brightness)),
+                      const SizedBox(width: 8),
+                      Text(
+                        '开始专注',
+                        style: TextStyle(
+                          color: AppColors.primary(brightness),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ).animate().fadeIn(delay: 150.ms, duration: AppConstants.animNormal),
+
+              const SizedBox(height: 16),
 
               // 删除按钮
               SizedBox(
@@ -303,6 +406,161 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       height: 0.5,
       margin: const EdgeInsets.only(left: 32),
       color: AppColors.separator(brightness).withValues(alpha: 0.3),
+    );
+  }
+
+  Widget _buildSubtaskSection(Brightness brightness) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(CupertinoIcons.list_bullet_indent,
+                  size: 20, color: AppColors.textSecondary(brightness)),
+              const SizedBox(width: 12),
+              Text(
+                '子任务',
+                style: AppTextStyles.body.copyWith(
+                    color: AppColors.textPrimary(brightness)),
+              ),
+              const Spacer(),
+              if (_subtasks.isNotEmpty)
+                Text(
+                  '${_subtasks.where((s) => s.isCompleted).length}/${_subtasks.length}',
+                  style: AppTextStyles.caption1.copyWith(
+                    color: AppColors.textSecondary(brightness),
+                  ),
+                ),
+            ],
+          ),
+          if (_subtasks.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ..._subtasks.map((sub) => _buildSubtaskItem(sub, brightness)),
+          ],
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _showAddSubtaskDialog,
+            child: Row(
+              children: [
+                Icon(CupertinoIcons.add_circled,
+                    size: 20,
+                    color: AppColors.primary(brightness)),
+                const SizedBox(width: 8),
+                Text(
+                  '添加子任务',
+                  style: AppTextStyles.footnote.copyWith(
+                    color: AppColors.primary(brightness),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 120.ms, duration: AppConstants.animNormal).slideY(begin: 0.1, end: 0, delay: 120.ms, duration: AppConstants.animNormal, curve: Curves.easeOut);
+  }
+
+  Widget _buildSubtaskItem(TaskModel subtask, Brightness brightness) {
+    return Dismissible(
+      key: ValueKey(subtask.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        color: AppColors.error,
+        child: const Icon(CupertinoIcons.delete, color: CupertinoColors.white),
+      ),
+      onDismissed: (_) async {
+        await ref.read(taskRepositoryProvider.notifier).deleteTask(subtask.id);
+        setState(() => _subtasks.removeWhere((s) => s.id == subtask.id));
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () async {
+                await ref.read(taskRepositoryProvider.notifier).toggleTaskStatus(subtask.id);
+                final updated = await ref.read(taskRepositoryProvider.notifier).getTaskById(subtask.id);
+                if (updated != null && mounted) {
+                  setState(() {
+                    final idx = _subtasks.indexWhere((s) => s.id == subtask.id);
+                    if (idx >= 0) _subtasks[idx] = updated;
+                  });
+                }
+              },
+              child: Icon(
+                subtask.isCompleted
+                    ? CupertinoIcons.checkmark_circle_fill
+                    : CupertinoIcons.circle,
+                size: 22,
+                color: subtask.isCompleted
+                    ? AppColors.success
+                    : AppColors.textSecondary(brightness),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                subtask.title,
+                style: AppTextStyles.body.copyWith(
+                  color: subtask.isCompleted
+                      ? AppColors.textSecondary(brightness)
+                      : AppColors.textPrimary(brightness),
+                  decoration: subtask.isCompleted
+                      ? TextDecoration.lineThrough
+                      : null,
+                  decorationColor: AppColors.textSecondary(brightness),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddSubtaskDialog() {
+    final controller = TextEditingController();
+    showCupertinoDialog(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('添加子任务'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: controller,
+            placeholder: '子任务标题',
+            autofocus: true,
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('取消'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            child: const Text('添加'),
+            onPressed: () async {
+              final title = controller.text.trim();
+              if (title.isNotEmpty) {
+                final newSub = await ref
+                    .read(taskRepositoryProvider.notifier)
+                    .createTask(
+                      title: title,
+                      listId: _task!.listId,
+                      parentId: widget.taskId,
+                    );
+                setState(() => _subtasks.add(newSub));
+              }
+              if (!context.mounted) return;
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -417,6 +675,350 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  String get _recurrenceLabel {
+    switch (_recurrenceRule) {
+      case 'daily': return '每天';
+      case 'weekly': return '每周';
+      case 'monthly': return '每月';
+      case 'yearly': return '每年';
+      default: return '不重复';
+    }
+  }
+
+  void _showRecurrencePicker(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        title: const Text('重复频率'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _recurrenceRule = null);
+              Navigator.pop(context);
+            },
+            child: const Text('不重复'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _recurrenceRule = 'daily');
+              Navigator.pop(context);
+            },
+            child: const Text('每天'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _recurrenceRule = 'weekly');
+              Navigator.pop(context);
+            },
+            child: const Text('每周'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _recurrenceRule = 'monthly');
+              Navigator.pop(context);
+            },
+            child: const Text('每月'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _recurrenceRule = 'yearly');
+              Navigator.pop(context);
+            },
+            child: const Text('每年'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+      ),
+    );
+  }
+
+  void _showReminderPicker(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        title: const Text('设置提醒'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _reminderAt = null);
+              Navigator.pop(context);
+            },
+            child: const Text('关闭提醒'),
+          ),
+          if (_dueDate != null)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                setState(() => _reminderAt = _dueDate);
+                Navigator.pop(context);
+              },
+              child: const Text('到期时提醒'),
+            ),
+          if (_dueDate != null)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                setState(() => _reminderAt = _dueDate!.subtract(const Duration(minutes: 15)));
+                Navigator.pop(context);
+              },
+              child: const Text('15 分钟前'),
+            ),
+          if (_dueDate != null)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                setState(() => _reminderAt = _dueDate!.subtract(const Duration(hours: 1)));
+                Navigator.pop(context);
+              },
+              child: const Text('1 小时前'),
+            ),
+          if (_dueDate != null)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                setState(() => _reminderAt = _dueDate!.subtract(const Duration(days: 1)));
+                Navigator.pop(context);
+              },
+              child: const Text('1 天前'),
+            ),
+          if (_dueDate == null)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                _showCustomReminderPicker(context);
+              },
+              child: const Text('自定义时间'),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+      ),
+    );
+  }
+
+  void _showCustomReminderPicker(BuildContext context) {
+    DateTime selectedDate = DateTime.now().add(const Duration(hours: 1));
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 300,
+        color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: const Text('取消'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('确定'),
+                  onPressed: () {
+                    setState(() => _reminderAt = selectedDate);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.dateAndTime,
+                initialDateTime: selectedDate,
+                onDateTimeChanged: (date) => selectedDate = date,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTagRow(BuildContext context) {
+    final brightness = CupertinoTheme.brightnessOf(context);
+    final tagsAsync = ref.watch(tagRepositoryProvider);
+    final allTags = tagsAsync.valueOrNull ?? [];
+    final taskTags = allTags.where((t) => _taskTagIds.contains(t.id)).toList();
+
+    return GestureDetector(
+      onTap: () => _showTagPicker(context),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(CupertinoIcons.tag, size: 20, color: AppColors.textSecondary(brightness)),
+            const SizedBox(width: 12),
+            Text(
+              '标签',
+              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary(brightness)),
+            ),
+            const Spacer(),
+            if (taskTags.isEmpty)
+              Text(
+                '无',
+                style: AppTextStyles.body.copyWith(color: AppColors.textSecondary(brightness)),
+              )
+            else
+              Wrap(
+                spacing: 6,
+                children: taskTags.map((t) => TagChip(label: t.name, compact: true)).toList(),
+              ),
+            const SizedBox(width: 4),
+            Icon(
+              CupertinoIcons.chevron_right,
+              size: 14,
+              color: AppColors.textSecondary(brightness).withValues(alpha: 0.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTagPicker(BuildContext context) {
+    final tagsAsync = ref.read(tagRepositoryProvider);
+    final allTags = tagsAsync.valueOrNull ?? [];
+    final tagRepo = ref.read(tagRepositoryProvider.notifier);
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: 400,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('选择标签', style: AppTextStyles.headline),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: const Text('完成'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: allTags.isEmpty
+                      ? Center(
+                          child: Text(
+                            '暂无标签，请先创建',
+                            style: AppTextStyles.footnote.copyWith(
+                              color: AppColors.textSecondary(CupertinoTheme.brightnessOf(context)),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: allTags.length,
+                          itemBuilder: (_, i) {
+                            final tag = allTags[i];
+                            final isSelected = _taskTagIds.contains(tag.id);
+                            return GestureDetector(
+                              onTap: () {
+                                setModalState(() {
+                                  if (isSelected) {
+                                    _taskTagIds.remove(tag.id);
+                                    tagRepo.removeTagFromTask(widget.taskId, tag.id);
+                                  } else {
+                                    _taskTagIds.add(tag.id);
+                                    tagRepo.addTagToTask(widget.taskId, tag.id);
+                                  }
+                                });
+                                setState(() {});
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                child: Row(
+                                  children: [
+                                    TagChip(label: tag.name, selected: isSelected),
+                                    const Spacer(),
+                                    if (isSelected)
+                                      Icon(CupertinoIcons.checkmark_circle_fill,
+                                          color: AppColors.primary(CupertinoTheme.brightnessOf(context)), size: 22),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                // 新建标签
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(CupertinoIcons.add, size: 18,
+                          color: AppColors.primary(CupertinoTheme.brightnessOf(context))),
+                      const SizedBox(width: 6),
+                      Text('新建标签', style: TextStyle(
+                          color: AppColors.primary(CupertinoTheme.brightnessOf(context)))),
+                    ],
+                  ),
+                  onPressed: () => _showCreateTagDialog(context, setModalState),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showCreateTagDialog(BuildContext context, StateSetter setModalState) {
+    final controller = TextEditingController();
+    showCupertinoDialog(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('新建标签'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: controller,
+            placeholder: '标签名称',
+            autofocus: true,
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('取消'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            child: const Text('创建'),
+            onPressed: () async {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                final tagRepo = ref.read(tagRepositoryProvider.notifier);
+                final newTag = await tagRepo.createTag(name: name);
+                tagRepo.addTagToTask(widget.taskId, newTag.id);
+                setModalState(() {
+                  _taskTagIds.add(newTag.id);
+                });
+                setState(() {});
+              }
+              if (!context.mounted) return;
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }

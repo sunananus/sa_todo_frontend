@@ -1,6 +1,8 @@
 // lib/data/models/task_tag_model.dart
 // 任务-标签关联模型
 
+import '../local/database.dart';
+
 class TaskTagModel {
   final String id;
   final String taskId;
@@ -45,4 +47,18 @@ class TaskTagModel {
       'is_deleted': isDeleted,
     };
   }
+
+  TaskTagEntity toEntity() => TaskTagEntity(
+        id: id,
+        taskId: taskId,
+        tagId: tagId,
+        isDeleted: isDeleted,
+      );
+
+  factory TaskTagModel.fromEntity(TaskTagEntity entity) => TaskTagModel(
+        id: entity.id,
+        taskId: entity.taskId,
+        tagId: entity.tagId,
+        isDeleted: entity.isDeleted,
+      );
 }

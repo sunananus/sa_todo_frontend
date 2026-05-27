@@ -1,6 +1,8 @@
 // lib/data/models/list_model.dart
 // 清单数据模型
 
+import '../local/database.dart';
+
 class ListModel {
   final String id;
   final String name;
@@ -70,4 +72,26 @@ class ListModel {
       'is_deleted': isDeleted,
     };
   }
+
+  ListEntity toEntity() => ListEntity(
+        id: id,
+        name: name,
+        colorCode: colorCode,
+        sortOrder: sortOrder,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        isDeleted: isDeleted,
+        syncStatus: syncStatus,
+      );
+
+  factory ListModel.fromEntity(ListEntity entity) => ListModel(
+        id: entity.id,
+        name: entity.name,
+        colorCode: entity.colorCode,
+        sortOrder: entity.sortOrder,
+        createdAt: entity.createdAt,
+        updatedAt: entity.updatedAt,
+        isDeleted: entity.isDeleted,
+        syncStatus: entity.syncStatus,
+      );
 }

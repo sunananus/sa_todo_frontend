@@ -23,7 +23,10 @@
       "Bash(git config *)",
       "Bash(GIT_CURL_VERBOSE=1 git push)",
       "Bash(flutter doctor *)",
-      "PowerShell(Test-Path \"C:\\\\Program Files\\\\Android\\\\Android Studio\"; Test-Path \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\")"
+      "PowerShell(Test-Path \"C:\\\\Program Files\\\\Android\\\\Android Studio\"; Test-Path \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\")",
+      "Bash(Select-Object -First 100)",
+      "Bash(dart run *)",
+      "Bash(flutter analyze *)"
     ],
     "additionalDirectories": [
       "d:\\sa_todo_frontend\\lib\\features"

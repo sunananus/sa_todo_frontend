@@ -5,6 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/home_page.dart';
 import '../../features/task_detail/task_detail_page.dart';
+import '../../features/today/today_page.dart';
+import '../../features/calendar/calendar_page.dart';
 import '../../features/statistics/statistics_page.dart';
 import '../../features/lists/lists_page.dart';
 import '../../features/settings/settings_page.dart';
@@ -30,7 +32,29 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Tab 1: 统计
+        // Tab 1: 今天
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/today',
+              pageBuilder: (context, state) => const NoTransitionPage(
+                child: TodayPage(),
+              ),
+            ),
+          ],
+        ),
+        // Tab 2: 日历
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/calendar',
+              pageBuilder: (context, state) => const NoTransitionPage(
+                child: CalendarPage(),
+              ),
+            ),
+          ],
+        ),
+        // Tab 3: 统计
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -41,7 +65,7 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Tab 2: 清单
+        // Tab 4: 清单
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -52,7 +76,7 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Tab 3: 设置
+        // Tab 5: 设置
         StatefulShellBranch(
           routes: [
             GoRoute(

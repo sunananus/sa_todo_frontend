@@ -15,6 +15,10 @@ class Tasks extends Table {
   DateTimeColumn get completedAt => dateTime().nullable()();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   IntColumn get syncStatus => integer().withDefault(const Constant(0))();
+  TextColumn get parentId => text().nullable()();
+  TextColumn get recurrenceRule => text().nullable()();
+  DateTimeColumn get reminderAt => dateTime().nullable()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};
