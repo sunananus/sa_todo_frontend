@@ -2,6 +2,7 @@
 // 日历视图 — 按日期查看任务
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Material, MaterialType;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -69,7 +70,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   color: AppColors.separator(brightness).withValues(alpha: 0.2),
                 ),
               ),
-              child: TableCalendar<TaskModel>(
+              child: Material(
+                type: MaterialType.transparency,
+                child: TableCalendar<TaskModel>(
                 firstDay: DateTime(2020),
                 lastDay: DateTime(2030),
                 focusedDay: _focusedDay,
@@ -135,6 +138,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   weekendStyle: AppTextStyles.caption1.copyWith(
                     color: AppColors.textSecondary(brightness),
                   ),
+                ),
                 ),
               ),
             ),

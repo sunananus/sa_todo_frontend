@@ -16,6 +16,8 @@ class WidgetDataService {
 
   /// 初始化 home_widget（仅 iOS 需要设置 App Group）
   static Future<void> init() async {
+    // 仅 iOS/Android 支持小组件
+    if (!Platform.isIOS && !Platform.isAndroid) return;
     if (Platform.isIOS) {
       await HomeWidget.setAppGroupId(_appGroupId);
     }
@@ -23,6 +25,8 @@ class WidgetDataService {
 
   /// 将未完成任务推送到小组件共享存储
   static Future<void> updateWidget(List<TaskModel> tasks) async {
+    // 仅 iOS/Android 支持小组件
+    if (!Platform.isIOS && !Platform.isAndroid) return;
     // 过滤未完成、未删除的任务
     final pending = tasks
         .where((t) => !t.isCompleted && !t.isDeleted)

@@ -16,6 +16,7 @@ import '../widget/widget_provider.dart';
 import 'home_provider.dart';
 import 'widgets/task_item_card.dart';
 import 'widgets/quick_add_bar.dart';
+import 'widgets/task_detail_drawer.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -27,6 +28,7 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage>
     with TickerProviderStateMixin {
   bool _isLoading = true;
+  String? _selectedTaskId;
 
   @override
   void initState() {
@@ -275,57 +277,59 @@ class _HomePageState extends ConsumerState<HomePage>
                                 .firstOrNull)
                             .whereType<String>()
                             .toList();
-                        return TaskItemCard(
+                        return KeyedSubtree(
                           key: ValueKey(task.id),
-                          task: task,
-                          tagNames: taskTagNames,
-                          subtasks: taskSubtasks,
-                          onTap: () => context.push('/task/${task.id}'),
-                          onStatusChanged: (checked) async {
-                            await ref.read(taskRepositoryProvider.notifier).toggleTaskStatus(task.id);
-                          },
-                          onSwipeComplete: () async {
-                            final taskRepo = ref.read(taskRepositoryProvider.notifier);
-                            await taskRepo.toggleTaskStatus(task.id);
-                            if (mounted) {
-                              _showUndoSnackBar(
-                                task.isCompleted ? '任务已恢复' : '任务已完成',
-                                () async => await taskRepo.toggleTaskStatus(task.id),
-                              );
-                            }
-                          },
-                          onDismissed: () async {
-                            final taskRepo = ref.read(taskRepositoryProvider.notifier);
-                            final deletedTask = task;
-                            await taskRepo.deleteTask(task.id);
-                            if (mounted) {
-                              _showUndoSnackBar('任务已删除', () async {
-                                // 恢复已删除的任务（重新创建）
-                                await taskRepo.createTask(
-                                  title: deletedTask.title,
-                                  description: deletedTask.description,
-                                  listId: deletedTask.listId,
-                                  priority: deletedTask.priority,
-                                  dueDate: deletedTask.dueDate,
-                                  parentId: deletedTask.parentId,
-                                  recurrenceRule: deletedTask.recurrenceRule,
+                          child: TaskItemCard(
+                            task: task,
+                            tagNames: taskTagNames,
+                            subtasks: taskSubtasks,
+                            onTap: () => setState(() => _selectedTaskId = task.id),
+                            onStatusChanged: (checked) async {
+                              await ref.read(taskRepositoryProvider.notifier).toggleTaskStatus(task.id);
+                            },
+                            onSwipeComplete: () async {
+                              final taskRepo = ref.read(taskRepositoryProvider.notifier);
+                              await taskRepo.toggleTaskStatus(task.id);
+                              if (mounted) {
+                                _showUndoSnackBar(
+                                  task.isCompleted ? '任务已恢复' : '任务已完成',
+                                  () async => await taskRepo.toggleTaskStatus(task.id),
                                 );
-                              });
-                            }
-                          },
-                        )
-                            .animate()
-                            .fadeIn(
-                              delay: Duration(milliseconds: 50 * index),
-                              duration: AppConstants.animNormal,
-                            )
-                            .slideY(
-                              begin: 0.1,
-                              end: 0,
-                              delay: Duration(milliseconds: 50 * index),
-                              duration: AppConstants.animNormal,
-                              curve: Curves.easeOut,
-                            );
+                              }
+                            },
+                            onDismissed: () async {
+                              final taskRepo = ref.read(taskRepositoryProvider.notifier);
+                              final deletedTask = task;
+                              await taskRepo.deleteTask(task.id);
+                              if (mounted) {
+                                _showUndoSnackBar('任务已删除', () async {
+                                  // 恢复已删除的任务（重新创建）
+                                  await taskRepo.createTask(
+                                    title: deletedTask.title,
+                                    description: deletedTask.description,
+                                    listId: deletedTask.listId,
+                                    priority: deletedTask.priority,
+                                    dueDate: deletedTask.dueDate,
+                                    parentId: deletedTask.parentId,
+                                    recurrenceRule: deletedTask.recurrenceRule,
+                                  );
+                                });
+                              }
+                            },
+                          )
+                              .animate()
+                              .fadeIn(
+                                delay: Duration(milliseconds: 50 * index),
+                                duration: AppConstants.animNormal,
+                              )
+                              .slideY(
+                                begin: 0.1,
+                                end: 0,
+                                delay: Duration(milliseconds: 50 * index),
+                                duration: AppConstants.animNormal,
+                                curve: Curves.easeOut,
+                              ),
+                        );
                       },
                   ),
                 ),
@@ -369,6 +373,20 @@ class _HomePageState extends ConsumerState<HomePage>
               },
             ),
           ),
+
+          // 右侧抽屉 — 任务详情
+          if (_selectedTaskId != null)
+            GestureDetector(
+              onTap: () => setState(() => _selectedTaskId = null),
+              child: Container(
+                color: CupertinoColors.black.withValues(alpha: 0.3),
+              ),
+            ),
+          if (_selectedTaskId != null)
+            TaskDetailDrawer(
+              taskId: _selectedTaskId!,
+              onClose: () => setState(() => _selectedTaskId = null),
+            ),
         ],
       ),
     );

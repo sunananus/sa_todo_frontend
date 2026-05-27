@@ -1,6 +1,7 @@
 // lib/core/notifications/notification_service.dart
 // 本地通知服务
 
+import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -10,11 +11,17 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._();
 
-  final _plugin = FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin? _plugin;
   bool _initialized = false;
 
+  bool get _isSupported => Platform.isIOS || Platform.isAndroid;
+  FlutterLocalNotificationsPlugin get _safePlugin {
+    _plugin ??= FlutterLocalNotificationsPlugin();
+    return _plugin!;
+  }
+
   Future<void> init() async {
-    if (_initialized) return;
+    if (_initialized || !_isSupported) return;
     tz.initializeTimeZones();
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -28,12 +35,13 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings);
+    await _safePlugin.initialize(settings);
     _initialized = true;
   }
 
   Future<void> requestPermission() async {
-    await _plugin
+    if (!_isSupported) return;
+    await _safePlugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
@@ -46,11 +54,12 @@ class NotificationService {
     required String body,
     required DateTime scheduledTime,
   }) async {
+    if (!_isSupported) return;
     if (!_initialized) await init();
 
     final tzDateTime = tz.TZDateTime.from(scheduledTime, tz.local);
 
-    await _plugin.zonedSchedule(
+    await _safePlugin.zonedSchedule(
       id,
       title,
       body,
@@ -77,11 +86,13 @@ class NotificationService {
 
   /// 取消指定通知
   Future<void> cancel(int id) async {
-    await _plugin.cancel(id);
+    if (!_isSupported || !_initialized) return;
+    await _safePlugin.cancel(id);
   }
 
   /// 取消所有通知
   Future<void> cancelAll() async {
-    await _plugin.cancelAll();
+    if (!_isSupported || !_initialized) return;
+    await _safePlugin.cancelAll();
   }
 }
